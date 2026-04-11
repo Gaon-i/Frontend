@@ -2,6 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import BottomNav from "../components/BottomNav";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import iconShortcut from "../icons/Togo.svg";
+import iconLike from "../icons/like.svg";
+import iconLikeSelected from "../icons/like_select.svg";
+import iconDislike from "../icons/dislike.svg";
+import iconDislikeSelected from "../icons/dislike_select.svg";
+import iconGaonLogo from "../icons/gaon-logo.svg";
 
 // API 파일 대신 직접 목업 응답 로직 사용
 interface Message {
@@ -9,6 +14,15 @@ interface Message {
   text: string;
   sender: "user" | "bot";
   timestamp: string;
+}
+
+type FeedbackRating = "like" | "dislike";
+
+interface FeedbackState {
+  rating: FeedbackRating;
+  comment: string;
+  isFormOpen: boolean;
+  isSubmitted: boolean;
 }
 
 const TypingIndicator = () => (
@@ -48,6 +62,7 @@ export default function Chatbot() {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isSuggestOpen, setIsSuggestOpen] = useState(true);
+  const [feedbacks, setFeedbacks] = useState<Record<string, FeedbackState>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // [추가] 컴포넌트 진입 시 비로그인 상태라면 즉시 기록 삭제 및 초기화
@@ -106,6 +121,70 @@ export default function Chatbot() {
     }, 1000);
   };
 
+  const handleFeedbackSelect = (messageId: string, rating: FeedbackRating) => {
+    setFeedbacks(prev => {
+      const current = prev[messageId];
+      if (current?.isSubmitted) return prev;
+
+      const isRatingChanged = current?.rating && current.rating !== rating;
+
+      return {
+        ...prev,
+        [messageId]: {
+          rating,
+          comment: isRatingChanged ? "" : current?.comment ?? "",
+          isFormOpen: true,
+          isSubmitted: false
+        }
+      };
+    });
+  };
+
+  const handleFeedbackCommentChange = (messageId: string, comment: string) => {
+    setFeedbacks(prev => {
+      const current = prev[messageId];
+      if (!current) return prev;
+
+      return {
+        ...prev,
+        [messageId]: {
+          ...current,
+          comment
+        }
+      };
+    });
+  };
+
+  const handleFeedbackSubmit = (messageId: string) => {
+    setFeedbacks(prev => {
+      const current = prev[messageId];
+      if (!current || !current.comment.trim()) return prev;
+
+      return {
+        ...prev,
+        [messageId]: {
+          ...current,
+          isFormOpen: false,
+          isSubmitted: true
+        }
+      };
+    });
+  };
+
+  const closeOpenFeedbackForms = () => {
+    setFeedbacks(prev => {
+      let hasOpenForm = false;
+      const next = Object.fromEntries(
+        Object.entries(prev).map(([messageId, feedback]) => {
+          if (feedback.isFormOpen) hasOpenForm = true;
+          return [messageId, { ...feedback, isFormOpen: false }];
+        })
+      );
+
+      return hasOpenForm ? next : prev;
+    });
+  };
+
   return (
     <div className="bg-[#f6fbff] min-h-screen w-full max-w-[448px] mx-auto relative shadow-2xl flex flex-col overflow-x-hidden">
       {/* 헤더 */}
@@ -115,24 +194,96 @@ export default function Chatbot() {
       </div>
 
       {/* 채팅 메시지 영역 */}
-      <div className="flex-1 px-6 py-4 space-y-8 overflow-y-auto overflow-x-hidden bg-transparent">
+      <div onClick={closeOpenFeedbackForms} className="flex-1 px-6 py-4 space-y-8 overflow-y-auto overflow-x-hidden bg-transparent">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
-            <div className={`relative max-w-[88%] px-5 py-4 rounded-[18px] flex flex-col shadow-md border 
-              ${msg.sender === "user" 
-                ? "bg-[#5eb9ca] text-white rounded-tr-none border-transparent shadow-[#5eb9ca]/20" 
-                : "bg-white text-[#3e5b6a] rounded-tl-none border-[#eef6f7]"
-              }`}>
-              <span className="text-[14.5px] leading-[1.65] font-semibold whitespace-pre-wrap tracking-tight">
-                {msg.text}
-              </span>
-              <span className={`text-[10px] mt-2 font-semibold tracking-tight opacity-90 ${msg.sender === 'user' ? 'text-white' : 'text-[#adb5bd]'}`}>
-                {msg.timestamp}
-              </span>
+            <div className={`flex ${msg.sender === "user" ? "justify-end" : "items-start gap-2.5"} w-full`}>
+              {msg.sender === "bot" && (
+                <img
+                  src={iconGaonLogo}
+                  alt="가온이"
+                  className="mt-1 size-9 shrink-0 object-contain"
+                />
+              )}
+              <div className={`relative max-w-[88%] px-5 py-4 rounded-[18px] flex flex-col shadow-md border 
+                ${msg.sender === "user" 
+                  ? "bg-[#5eb9ca] text-white rounded-tr-none border-transparent shadow-[#5eb9ca]/20" 
+                  : "bg-white text-[#3e5b6a] rounded-tl-none border-[#eef6f7]"
+                }`}>
+                <span className="text-[14.5px] leading-[1.65] font-semibold whitespace-pre-wrap tracking-tight">
+                  {msg.text}
+                </span>
+                <span className={`text-[10px] mt-2 font-semibold tracking-tight opacity-90 ${msg.sender === 'user' ? 'text-white' : 'text-[#adb5bd]'}`}>
+                  {msg.timestamp}
+                </span>
+              </div>
             </div>
+            {msg.sender === "bot" && (
+              <div onClick={(e) => e.stopPropagation()} className="mt-2 ml-[46px] max-w-[calc(88%-46px)]">
+                <div className="flex items-center gap-0.5">
+                  {(["like", "dislike"] as FeedbackRating[]).map((rating) => {
+                    const feedback = feedbacks[msg.id];
+                    const isSelected = feedback?.rating === rating;
+                    const isLocked = feedback?.isSubmitted;
+                    const label = rating === "like" ? "좋아요" : "싫어요";
+                    const icon = rating === "like"
+                      ? (isSelected ? iconLikeSelected : iconLike)
+                      : (isSelected ? iconDislikeSelected : iconDislike);
+
+                    return (
+                      <button
+                        key={rating}
+                        type="button"
+                        aria-label={label}
+                        onClick={() => handleFeedbackSelect(msg.id, rating)}
+                        disabled={isLocked}
+                        className={`size-7 rounded-full flex items-center justify-center transition-all ${
+                          isLocked ? "cursor-default" : "hover:bg-[#eef6f7] active:scale-95"
+                        }`}
+                      >
+                        <img src={icon} alt="" className="size-[19px]" />
+                      </button>
+                    );
+                  })}
+                  {feedbacks[msg.id]?.isSubmitted && (
+                    <span className="text-[11px] font-bold text-[#054A57] ml-1 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                      소중한 의견이 전달되었어요!
+                    </span>
+                  )}
+                </div>
+
+                {feedbacks[msg.id]?.isFormOpen && (
+                  <div className="mt-2 p-3 bg-white border border-[#eef6f7] rounded-[16px] shadow-sm">
+                    <textarea
+                      value={feedbacks[msg.id]?.comment ?? ""}
+                      onChange={(e) => handleFeedbackCommentChange(msg.id, e.target.value)}
+                      placeholder="답변에 대한 피드백을 남겨주세요"
+                      className="w-full min-h-[74px] resize-none bg-[#f8fbff] rounded-[12px] px-3 py-2 text-[12.5px] font-semibold text-[#3e5b6a] outline-none border border-transparent focus:bg-white focus:border-[#5eb9ca]/40 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleFeedbackSubmit(msg.id)}
+                      disabled={!feedbacks[msg.id]?.comment.trim()}
+                      className="mt-2 w-full h-10 bg-[#054A57] disabled:bg-[#d8e3e6] disabled:text-[#8aa2aa] text-white rounded-[12px] text-[12.5px] font-extrabold active:scale-[0.98] transition-all"
+                    >
+                      피드백 보내기
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
-        {isTyping && <div className="flex flex-col items-start"><TypingIndicator /></div>}
+        {isTyping && (
+          <div className="flex items-start gap-2.5">
+            <img
+              src={iconGaonLogo}
+              alt="가온이"
+              className="mt-1 size-9 shrink-0 object-contain"
+            />
+            <TypingIndicator />
+          </div>
+        )}
         <div style={{ height: isSuggestOpen ? "320px" : "210px" }} className="transition-all duration-300 pointer-events-none" ref={messagesEndRef} />
       </div>
 
