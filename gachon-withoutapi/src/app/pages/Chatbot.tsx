@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import BottomNav from "../components/BottomNav";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import iconShortcut from "../icons/Togo.svg";
+import iconShortcut from "../icons/arrow.svg";
 import iconLike from "../icons/like.svg";
 import iconLikeSelected from "../icons/like_select.svg";
 import iconDislike from "../icons/dislike.svg";
@@ -205,21 +205,28 @@ export default function Chatbot() {
                   className="mt-1 size-9 shrink-0 object-contain"
                 />
               )}
-              <div className={`relative max-w-[88%] px-5 py-4 rounded-[18px] flex flex-col shadow-md border 
+              {msg.sender === "user" && (
+                <span className="self-end mb-1 mr-2 text-[10px] font-semibold tracking-tight text-[#adb5bd]">
+                  {msg.timestamp}
+                </span>
+              )}
+              <div className={`relative max-w-[66%] px-5 py-4 rounded-[18px] flex flex-col shadow-md border 
                 ${msg.sender === "user" 
                   ? "bg-[#5eb9ca] text-white rounded-tr-none border-transparent shadow-[#5eb9ca]/20" 
                   : "bg-white text-[#3e5b6a] rounded-tl-none border-[#eef6f7]"
                 }`}>
-                <span className="text-[14.5px] leading-[1.65] font-semibold whitespace-pre-wrap tracking-tight">
+                <span className="text-[15px] leading-[1.6] font-medium whitespace-pre-wrap tracking-tight">
                   {msg.text}
                 </span>
-                <span className={`text-[10px] mt-2 font-semibold tracking-tight opacity-90 ${msg.sender === 'user' ? 'text-white' : 'text-[#adb5bd]'}`}>
+              </div>
+              {msg.sender === "bot" && (
+                <span className="self-end mb-1 ml-2 text-[10px] font-semibold tracking-tight text-[#adb5bd]">
                   {msg.timestamp}
                 </span>
-              </div>
+              )}
             </div>
             {msg.sender === "bot" && (
-              <div onClick={(e) => e.stopPropagation()} className="mt-2 ml-[46px] max-w-[calc(88%-46px)]">
+              <div onClick={(e) => e.stopPropagation()} className="mt-2 ml-[46px] w-[66%] max-w-[66%]">
                 <div className="flex items-center gap-0.5">
                   {(["like", "dislike"] as FeedbackRating[]).map((rating) => {
                     const feedback = feedbacks[msg.id];
@@ -299,7 +306,7 @@ export default function Chatbot() {
           <div className={`grid grid-cols-2 gap-2 transition-all duration-300 ease-in-out ${isSuggestOpen ? "max-h-[200px] opacity-100 mb-2" : "max-h-0 opacity-0 mb-0"} overflow-visible`}>
             {suggestedQuestions.map((q, i) => (
               <button key={i} onClick={() => handleSend(q)} className="w-full relative px-3 py-2.5 bg-white border border-[#eef6f7] rounded-[18px] shadow-sm active:scale-95 transition-all min-h-[35px]">
-                <span className="text-[11.5px] text-[#5a7685] font-extrabold text-center leading-[1.3] whitespace-normal break-keep">{q}</span>
+                <span className="text-[11.5px] text-[#5a7685] font-bold text-center leading-[1.3] whitespace-normal break-keep">{q}</span>
               </button>
             ))}
           </div>
@@ -310,10 +317,10 @@ export default function Chatbot() {
             onChange={(e) => setInputValue(e.target.value)} 
             onKeyDown={(e) => e.key === "Enter" && handleSend()} 
             placeholder="메시지를 입력하세요..." 
-            className="flex-1 bg-[#f1f5f9] rounded-[22px] px-5 py-3 outline-none text-[14.5px] font-bold text-[#3e5b6a] border border-transparent focus:bg-white focus:border-[#5eb9ca]/30 transition-all" 
+            className="flex-1 bg-[#f1f5f9] rounded-[22px] px-5 py-3 outline-none text-[14.5px] font-medium text-[#3e5b6a] border border-transparent focus:bg-white focus:border-[#5eb9ca]/30 transition-all" 
           />
           <button onClick={() => handleSend()} className="size-[50px] bg-[#5eb9ca] rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all shrink-0">
-            <img src={iconShortcut} alt="send" className="w-5 h-5 brightness-0 invert" />
+            <img src={iconShortcut} alt="send" className="w-8 h-8 brightness-0 invert" />
           </button>
         </div>
       </div>
