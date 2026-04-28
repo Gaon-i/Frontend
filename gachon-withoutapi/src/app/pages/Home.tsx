@@ -1,23 +1,21 @@
 import { Link, useNavigate } from "react-router";
 import BottomNav from "../components/BottomNav";
-import iconShortcut from "../icons/Togo.svg";
+import iconShortcut from "../icons/gaon-logo.svg";
+import messageIcon from "../icons/Togo.svg";
 // 로그인 상태를 가져오는 훅(이미 사용 중인 context가 있다면 그것을 사용하세요)
 // 예: import { useAuth } from "../contexts/AuthContext"; 
 
 function HeaderSection() {
   return (
-    <div className="flex flex-row items-start pt-[64px] w-[340px] mx-auto gap-4 text-left font-sans antialiased">
+    <div className="flex flex-row items-center pt-[64px] w-[340px] mx-auto gap-4 text-left font-sans antialiased">
       {/* 아이콘 영역 */}
-      <div className="relative shrink-0 pt-1">
-        <div className="absolute inset-0 bg-[#21dcff] blur-[10px] opacity-20"></div>
-        <div className="relative bg-[#5eb9ca] rounded-[12px] p-2 flex items-center justify-center shadow-sm shadow-[#5eb9ca]/20">
-          <img 
-            src={iconShortcut} 
-            alt="가온이 아이콘" 
-            className="w-6 h-6 brightness-0 invert transition-all" 
-          />
-        </div>
-      </div>
+  <div className="shrink-0 flex items-center justify-center">
+    <img
+      src={iconShortcut}
+      alt="가온이 로고"
+      className="w-[100px] h-auto object-contain"
+    />
+  </div>
 
       {/* 텍스트 영역 */}
       <div className="flex flex-col items-start gap-1 flex-1">
@@ -69,7 +67,7 @@ export default function Home() {
           to={"/chatbot"}
           className="w-full h-[62px] bg-[#5eb9ca] rounded-[20px] flex items-center justify-center gap-3 shadow-lg shadow-[#5eb9ca]/25 active:scale-95 transition-transform"
         >
-          <img src={iconShortcut} alt="" className="size-5 brightness-0 invert" />
+          <img src={messageIcon} alt="" className="size-5 brightness-0 invert" />
           <p className="text-[16px] font-bold text-white tracking-tight">
             궁금한 내용을 바로 물어보세요!
           </p>
