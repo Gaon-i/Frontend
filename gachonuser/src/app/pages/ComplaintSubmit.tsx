@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   ChevronLeft, X, Loader2, Check, ChevronDown,
-  Wrench, ScrollText, Eraser, Volume2, HelpCircle, ImagePlus
+  Wrench, ScrollText, Eraser, Volume2, HelpCircle, ImagePlus, AlertCircle
 } from "lucide-react";
 import api from "../api/axios";
 
@@ -21,6 +21,14 @@ export default function ComplaintSubmit() {
   const [content, setContent] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+
+  // 알림 모달 상태
+  const [alertConfig, setAlertConfig] = useState({
+    show: false,
+    message: "",
+    isConfirm: false,
+    // 확인만 필요할 경우 false, 선택이 필요할 경우 true
+  });
 
   // 유효성 검사 상태
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -49,9 +57,8 @@ export default function ComplaintSubmit() {
 
   // 서버 연동 API 호출 로직
   const handleSubmit = useCallback(async () => {
-    if (!title || !content) return;
+    setIsSubmitted(true);
 
-    // 유효성 검사 통과 여부 확인
     if (!title.trim() || !content.trim()) return;
 
     setLoading(true);
@@ -81,7 +88,7 @@ export default function ComplaintSubmit() {
     } catch (error: any) {
       console.error("민원 등록 실패:", error);
       const errorMsg = error.response?.data?.message || "민원 접수 중 오류가 발생했습니다.";
-      alert(errorMsg);
+      setAlertConfig({ show: true, message: errorMsg, isConfirm: false });
     } finally {
       setLoading(false);
     }
@@ -91,9 +98,8 @@ export default function ComplaintSubmit() {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
       if (imageFiles.length + newFiles.length > 5) {
-        return alert("최대 5장까지 첨부 가능합니다.");
+        return setAlertConfig({ show: true, message: "최대 5장까지 첨부 가능합니다.", isConfirm: false });
       }
-
       setImageFiles(prev => [...prev, ...newFiles]);
 
       const newPreviews = newFiles.map(file => URL.createObjectURL(file));
@@ -122,6 +128,31 @@ export default function ComplaintSubmit() {
 
   return (
     <div className="bg-[#f6fbff] min-h-screen w-full max-w-[448px] mx-auto flex flex-col shadow-2xl relative animate-in fade-in duration-500 antialiased font-sans">
+
+      {/* 알림 모달 */}
+      {alertConfig.show && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-8 bg-[#054a57]/20 backdrop-blur-[3px]">
+          <div className="bg-white w-full max-w-[320px] rounded-[28px] shadow-2xl p-7 animate-in fade-in zoom-in duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="size-[56px] bg-[#f0f9ff] rounded-full flex items-center justify-center mb-4">
+                {alertConfig.isConfirm ? <AlertCircle className="text-[#5eb9ca]" size={28} /> : <Check className="text-[#5eb9ca]" size={28} />}
+              </div>
+              <h2 className="text-[17px] font-bold text-[#054a57] mb-2">알림</h2>
+              <p className="text-[14px] font-medium text-[#7aaeb7] leading-relaxed mb-6 whitespace-pre-line">{alertConfig.message}</p>
+              <div className="flex gap-2 w-full">
+                {alertConfig.isConfirm ? (
+                  <>
+                    <button onClick={() => setAlertConfig({ ...alertConfig, show: false })} className="flex-1 h-[50px] bg-slate-100 text-slate-500 font-bold rounded-[18px] active:scale-[0.96]">취소</button>
+                    <button onClick={() => setAlertConfig({ ...alertConfig, show: false })} className="flex-1 h-[50px] bg-[#5eb9ca] text-white font-bold rounded-[18px] shadow-md active:scale-[0.96]">확인</button>
+                  </>
+                ) : (
+                  <button onClick={() => setAlertConfig({ ...alertConfig, show: false })} className="w-full h-[50px] bg-[#5eb9ca] text-white font-bold rounded-[18px] shadow-md active:scale-[0.96]">확인</button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 헤더 */}
       <div className="pt-[54px] px-6 pb-4 bg-[#f6fbff]/80 backdrop-blur-xl sticky top-0 z-50 border-b border-[#eef6f7] flex items-center justify-between">
