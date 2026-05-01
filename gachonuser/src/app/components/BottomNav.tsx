@@ -52,7 +52,7 @@ export default function BottomNav() {
   // 아이콘 스타일
   const iconClass = "size-[26px] transition-all duration-300 z-10";
   const activeFilter = {
-    filter: "invert(24%) sepia(21%) saturate(1915%) hue-rotate(149deg) brightness(80%) contrast(100%)"
+    filter: "invert(70%) sepia(22%) saturate(1190%) hue-rotate(157deg) brightness(47%) contrast(96%)"
   };
   const inactiveFilter = { opacity: 0.4, filter: "grayscale(20%)" };
 
@@ -88,7 +88,7 @@ export default function BottomNav() {
               <div className="flex gap-3 w-full mt-2">
                 <button
                   onClick={handleCancel}
-                  className="flex-1 py-4 bg-slate-100 rounded-2xl text-[14px] font-bold text-slate-500 active:scale-95 transition-all"
+                  className="flex-1 py-4 bg-[#e6eef1] rounded-2xl text-[14px] font-bold text-[#607d8b] active:scale-95 transition-all"
                 >
                   취소
                 </button>
@@ -125,7 +125,7 @@ export default function BottomNav() {
         <Link to="/chatbot" className="flex flex-col items-center -mt-8 relative transition-transform hover:scale-105 active:scale-95">
           <div className={`size-[64px] bg-gradient-to-br from-[#dcf7fa] to-[#88d5e2] rounded-full flex items-center justify-center relative overflow-hidden transition-all duration-200 ${isActive("/chatbot") ? "border-[6px] border-white shadow-[0_10px_20px_rgba(94,185,202,0.5)] scale-105" : "border-4 border-white/80 shadow-[0_8px_15px_rgba(94,185,202,0.3)]"}`}>
             <div className="absolute inset-0 bg-white/20 opacity-50" />
-            <img src={iconChatbot} alt="챗봇" className={`z-10 transition-all duration-200 ${isActive("/chatbot") ? "size-[36px] drop-shadow-md" : "size-[32px]"}`} />
+            <img src={iconChatbot} alt="챗봇" className={`z-10 transition-all duration-200 ${isActive("/chatbot") ? "size-[47px] drop-shadow-md" : "size-[42px]"}`} />
           </div>
           <span className={`text-[11px] mt-2 tracking-tight transition-all ${isActive("/chatbot") ? "font-black text-[#054a57]" : "font-bold text-[#46a3b5]"}`}>챗봇</span>
         </Link>
