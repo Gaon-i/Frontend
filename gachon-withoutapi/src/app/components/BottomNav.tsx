@@ -51,7 +51,7 @@ export default function BottomNav() {
   // 아이콘 스타일
   const iconClass = "size-[26px] transition-all duration-300 z-10";
   const activeFilter = {
-    filter: "invert(24%) sepia(21%) saturate(1915%) hue-rotate(149deg) brightness(80%) contrast(100%)"
+    filter: "invert(70%) sepia(22%) saturate(1190%) hue-rotate(157deg) brightness(47%) contrast(96%)"
   };
   const inactiveFilter = { opacity: 0.4, filter: "grayscale(20%)" };
 
@@ -87,7 +87,7 @@ export default function BottomNav() {
               <div className="flex gap-3 w-full mt-2">
                 <button
                   onClick={handleCancel}
-                  className="flex-1 py-4 bg-slate-100 rounded-2xl text-[14px] font-bold text-slate-500 active:scale-95 transition-all"
+                  className="flex-1 py-4 bg-[#e6eef1] rounded-2xl text-[14px] font-bold text-[#607d8b] active:scale-95 transition-all"
                 >
                   취소
                 </button>
