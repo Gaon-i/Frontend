@@ -1,0 +1,266 @@
+import { useState, useRef, useEffect } from "react";
+import BottomNav from "../components/BottomNav";
+import { FileText, ChevronDown, ChevronUp, Calendar, Loader2, AlertCircle, Plus } from "lucide-react";
+import iconShortcut from "../icons/Togo.svg";
+import api from "../api/axios";
+
+// API 응답 타입 정의
+interface ChatResponse {
+  answer: string;
+  retrievedChunks: {
+    chunkId: number;
+    content: string;
+    similarity: number;
+  }[];
+  responseTime: number;
+}
+
+interface Message {
+  id: string;
+  text: string;
+  sender: "user" | "bot";
+  timestamp: string;
+  retrievedChunks?: {
+    chunkId: number;
+    content: string;
+    similarity: number;
+  }[];
+}
+
+const suggestedQuestions = ["입실 시간이 언제인가요?", "세탁실 이용 방법을 알려주세요", "식당 운영 시간이 궁금해요", "외박 신청은 어떻게 하나요?"];
+
+const TypingIndicator = () => (
+  <div className="flex space-x-1.5 px-5 py-4 bg-white rounded-[18px] rounded-tl-none shadow-md border border-[#eef6f7] w-fit">
+    <div className="w-1.5 h-1.5 bg-[#5eb9ca] rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+    <div className="w-1.5 h-1.5 bg-[#5eb9ca] rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+    <div className="w-1.5 h-1.5 bg-[#5eb9ca] rounded-full animate-bounce"></div>
+  </div>
+);
+
+export default function Chatbot() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [isSuggestOpen, setIsSuggestOpen] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [expandedSourceIds, setExpandedSourceIds] = useState<Set<string>>(new Set());
+
+  // 토글 함수 (메시지 ID를 받아 열기/닫기)
+  const toggleSource = (msgId: string) => {
+    setExpandedSourceIds(prev => {
+      const next = new Set(prev);
+      if (next.has(msgId)) {
+        next.delete(msgId);
+        // 이미 열려있으면 닫기
+      } else {
+        next.add(msgId);
+        // 닫혀있으면 열기
+      }
+      return next;
+    });
+  };
+
+  // 비로그인용 세션 ID 생성/관리 (guest_@@@ 형태)
+  const getOrGenerateSessionId = () => {
+    let sid = sessionStorage.getItem("guest_sessionId");
+    if (!sid) {
+      sid = `guest_${Math.random().toString(36).substring(2, 15)}`;
+      sessionStorage.setItem("guest_sessionId", sid);
+    }
+    return sid;
+  };
+
+  const getIsLoggedIn = () => sessionStorage.getItem("isLoggedIn") === "true";
+
+  // 초기 메시지 설정
+  useEffect(() => {
+    const initialMsg: Message = {
+      id: "1",
+      text: getIsLoggedIn()
+        ? "안녕하세요! 가온이입니다. 무엇을 도와드릴까요?"
+        : "안녕하세요! 가온이입니다.\n(비로그인 상태로 이용 중이며 대화 기록은 저장되지 않습니다.)",
+      sender: "bot",
+      timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true })
+    };
+
+    // 로그인 시에만 로컬스토리지에서 복구
+    if (getIsLoggedIn()) {
+      const saved = localStorage.getItem("chat_history");
+      setMessages(saved ? JSON.parse(saved) : [initialMsg]);
+    } else {
+      setMessages([initialMsg]);
+    }
+  }, []);
+
+  // 1. 메시지 끝으로 스크롤하는 함수
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // 2. 메시지 목록이 변경될 때마다(새 메시지, 로딩 시작 등) 스크롤 실행
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping, isSuggestOpen]);
+
+  // 메시지 전송 및 API 연동
+  const handleSend = async (text?: string) => {
+    const textToSend = text || inputValue;
+    if (!textToSend.trim() || isTyping) return;
+
+    const now = new Date();
+    const timestamp = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    // 유저 메시지 생성
+    const userMsg: Message = { id: Date.now().toString(), text: textToSend, sender: "user", timestamp };
+
+    // 메시지 즉시 반영
+    setMessages(prev => {
+      const updated = [...prev, userMsg];
+      if (getIsLoggedIn()) localStorage.setItem("chat_history", JSON.stringify(updated));
+      return updated;
+    });
+
+    setInputValue("");
+    setIsTyping(true);
+
+    try {
+      const isLoggedIn = getIsLoggedIn();
+      const requestData = {
+        question: textToSend,
+        ...(isLoggedIn ? {} : { sessionId: getOrGenerateSessionId() })
+      };
+
+      // 3. 백엔드 API 호출
+      const response = await api.post("/chatbot/questions", requestData); // Endpoint는 명세서에 맞춰 수정 필요
+
+      if (response.data.code === 200) {
+        const result: ChatResponse = response.data.data;
+
+        // 4. 봇 답변 추가
+        const botMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          text: result.answer,
+          sender: "bot",
+          timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          retrievedChunks: result.retrievedChunks
+        };
+
+        // 봇 답변 추가 및 저장
+        setMessages(prev => {
+          const updated = [...prev, botMsg];
+          if (isLoggedIn) localStorage.setItem("chat_history", JSON.stringify(updated));
+          return updated;
+        });
+      } else {
+        throw new Error(response.data.message || "알 수 없는 오류");
+      }
+    } catch (error: any) {
+      const errorMsg: Message = {
+        id: `error-${Date.now()}`,
+        text: error.response?.data?.message || "죄송합니다. 서버와 통신 중 오류가 발생했습니다.",
+        sender: "bot",
+        timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true })
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  return (
+    <div className="bg-[#f6fbff] min-h-screen w-full max-w-[448px] mx-auto relative shadow-2xl flex flex-col overflow-x-hidden">
+      {/* 헤더 */}
+      <div className="pt-16 px-7 pb-6 bg-[#f6fbff] shrink-0 z-10">
+        <h1 className="font-bold text-[28px] text-[#054a57] tracking-tight">챗봇</h1>
+        <p className="text-[#607d8b] text-[13px] font-bold mt-1 tracking-tight">기숙사 관련 질문을 해보세요</p>
+      </div>
+
+      {/* 메시지 영역 */}
+      <div className="flex-1 px-6 py-4 space-y-8 overflow-y-auto pb-40">
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
+            {/* 메시지 말풍선 */}
+            <div className={`relative max-w-[88%] px-5 py-4 rounded-[18px] flex flex-col shadow-md border 
+              ${msg.sender === "user" ? "bg-[#5eb9ca] text-white rounded-tr-none border-transparent shadow-[#5eb9ca]/20" : "bg-white text-[#3e5b6a] rounded-tl-none border-[#eef6f7]"}`}>
+              <span className="text-[14.5px] leading-[1.65] font-semibold whitespace-pre-wrap">{msg.text}</span>
+              <span className={`text-[10px] mt-2 font-semibold opacity-90 ${msg.sender === 'user' ? 'text-white' : 'text-[#adb5bd]'}`}>
+                {msg.timestamp}
+              </span>
+            </div>
+
+            {/* 출처 아코디언 */}
+            {msg.sender === "bot" && msg.retrievedChunks && msg.retrievedChunks.length > 0 && (
+              <div className="mt-2 w-full max-w-[88%]">
+                <button
+                  onClick={() => toggleSource(msg.id)}
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-[#5eb9ca] bg-white px-3 py-1.5 rounded-full shadow-sm border border-[#eef6f7] active:scale-95 transition-all"
+                >
+                  <FileText size={12} />
+                  참고 자료 {msg.retrievedChunks.length}개 {expandedSourceIds.has(msg.id) ? "닫기" : "보기"}
+                  <ChevronDown size={12} className={`transition-transform ${expandedSourceIds.has(msg.id) ? "rotate-180" : ""}`} />
+                </button>
+
+                {expandedSourceIds.has(msg.id) && (
+                  <div className="mt-2 space-y-2 bg-white p-3 rounded-[12px] border border-[#eef6f7] shadow-sm animate-in fade-in slide-in-from-top-1">
+                    {msg.retrievedChunks.map((chunk, index) => (
+                      <div key={index} className="pb-2 border-b border-[#f8fafc] last:border-0 last:pb-0">
+                        <p className="text-[11px] font-bold text-[#054a57] mb-0.5">출처 {index + 1}</p>
+                        <p className="text-[11px] text-[#607d8b] leading-relaxed line-clamp-2">{chunk.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+        {isTyping && <div className="flex flex-col items-start"><TypingIndicator /></div>}
+        <div ref={messagesEndRef} /> {/* 스크롤 타겟 */}
+      </div>
+
+      {/* 하단 인터페이스 */}
+      <div className="fixed bottom-[90px] w-full max-w-[448px] bg-white/90 backdrop-blur-xl border-t border-[#eef6f7] z-20 pt-5 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
+        <div className="px-6 relative z-10">
+          <div className="flex justify-between items-center mb-3 px-1">
+            <p className="text-[11px] text-[#b0bdc8] font-black uppercase tracking-wider">추천 질문</p>
+            <button onClick={() => setIsSuggestOpen(!isSuggestOpen)} className="p-1 hover:bg-[#f1f5f9] rounded-full transition-colors text-[#b0bdc8]">
+              {isSuggestOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+            </button>
+          </div>
+          <div className={`grid grid-cols-2 gap-2 transition-all duration-300 ease-in-out ${isSuggestOpen ? "max-h-[200px] opacity-100 mb-2" : "max-h-0 opacity-0 mb-0"} overflow-visible`}>
+            {suggestedQuestions.map((q, i) => (
+              <button key={i} onClick={() => handleSend(q)} className="w-full relative px-3 py-2.5 bg-white border border-[#eef6f7] rounded-[18px] shadow-sm active:scale-95 transition-all min-h-[35px]">
+                <span className="text-[11.5px] text-[#5a7685] font-extrabold text-center leading-[1.3] whitespace-normal break-keep">{q}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="px-6 pt-2 pb-5 flex gap-3 items-center relative z-10">
+          <input
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              // 한글 입력 시 엔터가 두 번 입력되는 현상 방지
+              if (e.key === "Enter" && !e.shiftKey && e.nativeEvent.isComposing === false) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="메시지를 입력하세요..."
+            className="flex-1 bg-[#f1f5f9] rounded-[22px] px-5 py-3 outline-none text-[14.5px] font-bold text-[#3e5b6a] border border-transparent focus:bg-white focus:border-[#5eb9ca]/30 transition-all"
+          />
+          <button onClick={() => handleSend()} className="size-[50px] bg-[#5eb9ca] rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all shrink-0">
+            <img src={iconShortcut} alt="send" className="w-5 h-5 brightness-0 invert" />
+          </button>
+        </div>
+      </div>
+
+      {/* 하단 네비게이션에 로그인 상태 전달 */}
+      <div className="fixed bottom-0 w-full max-w-[448px] z-50">
+        {/* <BottomNav isLoggedIn={getIsLoggedIn()} /> */}
+        <BottomNav />
+      </div>
+    </div>
+  );
+}
