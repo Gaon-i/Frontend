@@ -205,7 +205,7 @@ export default function AdminLogin() {
           <div className="mt-6 flex flex-col items-center shrink-0">
             <button
               type="button"
-              onClick={() => window.location.href = "http://localhost:5173/auth/login"}
+              onClick={() => window.location.href = "http://15.165.98.91:5173/auth/login"}
               className="w-full h-[52px] bg-white border-2 border-[#5eb9ca]/20 rounded-[16px] text-[#5eb9ca] font-extrabold text-[13px] hover:bg-[#5eb9ca]/5 active:bg-[#5eb9ca]/10 active:scale-[0.98] transition-all flex items-center justify-center"
             >
               일반 사용자 화면으로 이동
