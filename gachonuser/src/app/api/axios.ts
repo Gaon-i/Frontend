@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8080/api", // 서버 주소 입력
+  baseURL: "http://15.165.98.91:8080/api", // 서버 주소 입력
   withCredentials: true, // 세션 쿠키 전송을 위해 필수
   headers: {
     "Content-Type": "application/json",
