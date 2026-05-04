@@ -20,6 +20,16 @@ export default defineConfig({
   server: {
     port: 5174,
     strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'http://15.165.98.91',
+        // 백엔드 서버 주소
+        changeOrigin: true,
+        // 도메인 설정을 맞춰줌
+        secure: false,
+        // http를 사용하므로 false
+      },
+    },
   },
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
