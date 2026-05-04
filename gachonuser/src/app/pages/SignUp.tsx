@@ -151,13 +151,13 @@ export default function SignUp() {
       });
     }
 
-    if (successMsgs[field]) {
-      setSuccessMsgs((prev) => {
-        const n = { ...prev };
-        delete n[field];
-        return n;
-      });
-    }
+    // if (successMsgs[field]) {
+    //   setSuccessMsgs((prev) => {
+    //     const n = { ...prev };
+    //     delete n[field];
+    //     return n;
+    //   });
+    // }
   };
 
   const sendVerificationCode = async () => {
@@ -349,7 +349,7 @@ export default function SignUp() {
                 ? "bg-slate-100/50"
                 : "bg-white"
               } border-2 ${errors[field] ? "border-red-400" : "border-white"
-              } rounded-[18px] pl-11 pr-4 h-[54px] text-[14px] font-bold text-[#054a57] focus:outline-none focus:border-[#5eb9ca] transition-all shadow-sm`}
+              } rounded-[18px] pl-11 pr-20 h-[54px] text-[14px] font-bold text-[#054a57] focus:outline-none focus:border-[#5eb9ca] transition-all shadow-sm`}
           />
 
           {field === "verificationCode" &&

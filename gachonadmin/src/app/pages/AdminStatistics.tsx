@@ -90,7 +90,7 @@ export default function AdminStatistics() {
 
   const userTypeData = [
     { name: "로그인 유저", value: displayData.memberUserCount, color: "#5eb9ca" },
-    { name: "비로그인 세션", value: displayData.guestSessionCount, color: "#92a4a6" },
+    { name: "비로그인 유저", value: displayData.guestSessionCount, color: "#92a4a6" },
   ];
 
   return (
@@ -118,7 +118,7 @@ export default function AdminStatistics() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8">
             <SummaryCard title="질문 수" value={`${displayData.totalChats.toLocaleString()}건`} icon={MessageSquare} color="bg-[#5eb9ca]" />
             <SummaryCard title="활성 유저" value={`${displayData.memberUserCount.toLocaleString()}명`} icon={UserCheck} color="bg-[#28c76f]" />
-            <SummaryCard title="비로그인" value={`${displayData.guestSessionCount.toLocaleString()}개`} icon={Users} color="bg-[#ff9f43]" />
+            <SummaryCard title="비로그인 유저" value={`${displayData.guestSessionCount.toLocaleString()}개`} icon={Users} color="bg-[#ff9f43]" />
             <SummaryCard title="평균 응답" value={`${displayData.avgResponseTime}ms`} icon={Clock} color="bg-[#ea5455]" />
           </div>
 
@@ -158,7 +158,7 @@ export default function AdminStatistics() {
 
           {/* Top Questions Ranking */}
           <div className="bg-white rounded-[16px] p-6 shadow-sm">
-            <h2 className="font-['Pretendard:Bold',sans-serif] text-[18px] text-[#054a57] mb-6">자주 입력된 질문 TOP 5</h2>
+            <h2 className="font-['Pretendard:Bold',sans-serif] text-[18px] text-[#054a57] mb-6">자주 입력된 질문 TOP 20</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
               {displayData.topQuestions.length > 0 ? (
                 displayData.topQuestions.map((item, index) => {
