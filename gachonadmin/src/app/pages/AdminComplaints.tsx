@@ -122,7 +122,7 @@ export default function AdminComplaints() {
       }
     } catch (error: any) {
       const status = error.response?.status;
-      const msg = status === 403 ? "민원 목록 접근 권한이 없습니다." : "목록을 불러오지 못했습니다.";
+      const msg = status === 403 ? "민원 목록 접근 권한이 없습니다.\n 관리자 계정인지 확인해 주세요." : "목록을 불러오지 못했습니다.";
       triggerAlert("오류", msg);
     } finally {
       setLoading(false);

@@ -53,13 +53,17 @@ export default function AdminStatistics() {
         setShowAlert(true);
       }
     } catch (error: any) {
-      console.error("통계 데이터를 가져오는 중 오류 발생:", error);
-
       const status = error.response?.status;
       let errorMsg = error.response?.data?.message || "서버와의 통신이 원활하지 않습니다.";
 
       if (status === 403) {
         errorMsg = "통계 데이터 접근 권한이 없습니다.\n 관리자 계정인지 확인해 주세요.";
+      }
+      // 401 에러(로그인 만료/미로그인) 시 로그인 페이지로 안내
+      else if (status === 401) {
+        errorMsg = "로그인 세션이 만료되었습니다.\n 다시 로그인해 주세요.";
+        // 페이지 이동 추가 가능
+        window.location.href = "/admin/auth/login";
       }
 
       setAlertTitle("오류");

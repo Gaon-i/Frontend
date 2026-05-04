@@ -4,29 +4,45 @@ import { FileText, ChevronDown, ChevronUp, Calendar, Loader2, AlertCircle, Plus 
 import iconShortcut from "../icons/Togo.svg";
 import api from "../api/axios";
 
-// API 응답 타입 정의
-interface ChatResponse {
-  answer: string;
-  retrievedChunks: {
-    chunkId: number;
-    content: string;
-    similarity: number;
-  }[];
-  responseTime: number;
-}
-
 interface Message {
   id: string;
   text: string;
   sender: "user" | "bot";
   timestamp: string;
-  retrievedChunks?: {
-    chunkId: number;
-    content: string;
-    similarity: number;
-  }[];
+  // ?는 해당 속성이 있어도 되고 없어도 된다는 뜻 (사용자 메시지엔 없기 때문)
+  retrievedChunks?: RetrievedChunk[]; 
 }
 
+interface RetrievedChunk {
+  retrievalResultId: number;
+  regulationChunkId: number;
+  documentId: string;
+  documentVersion: string;
+  chunkId: string;
+  content: string;
+  retrievalRank: number;
+  retrievalScore: number;
+  rerankScore: number | null;
+  retrievalMethod: string;
+  usedInAnswer: boolean;
+  selectedAsCitation: boolean;
+  citationOrder: number | null;
+}
+
+interface ChatResponseData {
+  chatLogId: number;
+  sessionId: string;
+  answer: string;
+  retrievedChunks: RetrievedChunk[];
+  responseTime: number;
+}
+
+// API 응답 전체 구조
+interface ApiResponse {
+  data: ChatResponseData;
+  code: number;
+  message: string;
+}
 const suggestedQuestions = ["입실 시간이 언제인가요?", "세탁실 이용 방법을 알려주세요", "식당 운영 시간이 궁금해요", "외박 신청은 어떻게 하나요?"];
 
 const TypingIndicator = () => (
@@ -128,14 +144,16 @@ export default function Chatbot() {
       const isLoggedIn = getIsLoggedIn();
       const requestData = {
         question: textToSend,
+        // 로그인 여부와 관계없이 sessionId를 보내도 되지만 
+        // 비로그인 사용자인 경우에만 명시적으로 보내도록 유지
         ...(isLoggedIn ? {} : { sessionId: getOrGenerateSessionId() })
       };
 
       // 3. 백엔드 API 호출
-      const response = await api.post("/chatbot/questions", requestData); // Endpoint는 명세서에 맞춰 수정 필요
+      const response = await api.post<ApiResponse>("/chatbot/questions", requestData);
 
-      if (response.data.code === 200) {
-        const result: ChatResponse = response.data.data;
+      if (response.data && response.data.code === 200) {
+        const result = response.data.data;
 
         // 4. 봇 답변 추가
         const botMsg: Message = {
@@ -153,6 +171,7 @@ export default function Chatbot() {
           return updated;
         });
       } else {
+        // 200이 아닌 경우 처리
         throw new Error(response.data.message || "알 수 없는 오류");
       }
     } catch (error: any) {
@@ -203,10 +222,14 @@ export default function Chatbot() {
 
                 {expandedSourceIds.has(msg.id) && (
                   <div className="mt-2 space-y-2 bg-white p-3 rounded-[12px] border border-[#eef6f7] shadow-sm animate-in fade-in slide-in-from-top-1">
-                    {msg.retrievedChunks.map((chunk, index) => (
-                      <div key={index} className="pb-2 border-b border-[#f8fafc] last:border-0 last:pb-0">
-                        <p className="text-[11px] font-bold text-[#054a57] mb-0.5">출처 {index + 1}</p>
-                        <p className="text-[11px] text-[#607d8b] leading-relaxed line-clamp-2">{chunk.content}</p>
+                    {msg.retrievedChunks?.map((chunk, index) => (
+                      <div key={chunk.retrievalResultId} className="pb-2 border-b border-[#f8fafc] last:border-0 last:pb-0">
+                        <p className="text-[11px] font-bold text-[#054a57] mb-0.5">
+                          출처 {index + 1} (점수: {chunk.retrievalScore.toFixed(2)})
+                        </p>
+                        <p className="text-[11px] text-[#607d8b] leading-relaxed line-clamp-2">
+                          {chunk.content}
+                        </p>
                       </div>
                     ))}
                   </div>
