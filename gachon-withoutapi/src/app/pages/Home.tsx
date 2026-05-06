@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router";
 import BottomNav from "../components/BottomNav";
 import iconShortcut from "../icons/gaon-logo.svg";
-import messageIcon from "../icons/Togo.svg";
+import messageIcon from "../icons/typing.svg";
 // 로그인 상태를 가져오는 훅(이미 사용 중인 context가 있다면 그것을 사용하세요)
 // 예: import { useAuth } from "../contexts/AuthContext"; 
 
@@ -67,7 +67,7 @@ export default function Home() {
           to={"/chatbot"}
           className="w-full h-[62px] bg-[#5eb9ca] rounded-[20px] flex items-center justify-center gap-3 shadow-lg shadow-[#5eb9ca]/25 active:scale-95 transition-transform"
         >
-          <img src={messageIcon} alt="" className="size-5 brightness-0 invert" />
+          <img src={messageIcon} alt="" className="size-6 brightness-0 invert" />
           <p className="text-[16px] font-bold text-white tracking-tight">
             궁금한 내용을 바로 물어보세요!
           </p>
