@@ -175,9 +175,13 @@ export default function Chatbot() {
     setFeedbacks(prev => {
       let hasOpenForm = false;
       const next = Object.fromEntries(
-        Object.entries(prev).map(([messageId, feedback]) => {
-          if (feedback.isFormOpen) hasOpenForm = true;
-          return [messageId, { ...feedback, isFormOpen: false }];
+        Object.entries(prev).flatMap(([messageId, feedback]) => {
+          if (!feedback.isFormOpen) return [[messageId, feedback]];
+
+          hasOpenForm = true;
+          if (!feedback.isSubmitted) return [];
+
+          return [[messageId, { ...feedback, isFormOpen: false }]];
         })
       );
 
