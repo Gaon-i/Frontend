@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, memo, useCallback } from "react";
 import BottomNav from "../components/BottomNav";
 import { ChevronDown, ChevronUp } from "lucide-react";
-<<<<<<< HEAD
 import iconShortcut  from "../icons/Togo.svg";
 import iconLogo      from "../icons/GAONI.svg";
 import iconLike      from "../icons/Like.svg";
@@ -12,14 +11,6 @@ import iconDislikeRed from "../icons/DislikeRed.svg";
 // ─── 타입 ─────────────────────────────────────────────────
 
 type FeedbackStatus = "like" | "dislike" | null;
-=======
-import iconShortcut from "../icons/arrow.svg";
-import iconLike from "../icons/like.svg";
-import iconLikeSelected from "../icons/like_select.svg";
-import iconDislike from "../icons/dislike.svg";
-import iconDislikeSelected from "../icons/dislike_select.svg";
-import iconGaonLogo from "../icons/gaon-logo.svg";
->>>>>>> 2f20c5a7bacd26848300aeb90cf88fcdfa09dec7
 
 interface Message {
   id: string;
@@ -33,26 +24,7 @@ interface Message {
   isFeedbackSubmitted?: boolean;
 }
 
-<<<<<<< HEAD
 // ─── 상수 ─────────────────────────────────────────────────
-=======
-type FeedbackRating = "like" | "dislike";
-
-interface FeedbackState {
-  rating: FeedbackRating;
-  comment: string;
-  isFormOpen: boolean;
-  isSubmitted: boolean;
-}
-
-const TypingIndicator = () => (
-  <div className="flex space-x-1.5 px-5 py-4 bg-white rounded-[18px] rounded-tl-none shadow-md border border-[#eef6f7] w-fit">
-    <div className="w-1.5 h-1.5 bg-[#5eb9ca] rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-    <div className="w-1.5 h-1.5 bg-[#5eb9ca] rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-    <div className="w-1.5 h-1.5 bg-[#5eb9ca] rounded-full animate-bounce"></div>
-  </div>
-);
->>>>>>> 2f20c5a7bacd26848300aeb90cf88fcdfa09dec7
 
 const SUGGESTED_QUESTIONS: readonly string[] = [
   "입실 시간이 언제인가요?",
@@ -177,11 +149,7 @@ export default function Chatbot() {
   const [inputValue, setInputValue]     = useState("");
   const [isTyping, setIsTyping]         = useState(false);
   const [isSuggestOpen, setIsSuggestOpen] = useState(true);
-<<<<<<< HEAD
 
-=======
-  const [feedbacks, setFeedbacks] = useState<Record<string, FeedbackState>>({});
->>>>>>> 2f20c5a7bacd26848300aeb90cf88fcdfa09dec7
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // ── 초기 메시지 ──
@@ -275,74 +243,6 @@ export default function Chatbot() {
     }
   }, [handleSend]);
 
-  const handleFeedbackSelect = (messageId: string, rating: FeedbackRating) => {
-    setFeedbacks(prev => {
-      const current = prev[messageId];
-      if (current?.isSubmitted) return prev;
-
-      const isRatingChanged = current?.rating && current.rating !== rating;
-
-      return {
-        ...prev,
-        [messageId]: {
-          rating,
-          comment: isRatingChanged ? "" : current?.comment ?? "",
-          isFormOpen: true,
-          isSubmitted: false
-        }
-      };
-    });
-  };
-
-  const handleFeedbackCommentChange = (messageId: string, comment: string) => {
-    setFeedbacks(prev => {
-      const current = prev[messageId];
-      if (!current) return prev;
-
-      return {
-        ...prev,
-        [messageId]: {
-          ...current,
-          comment
-        }
-      };
-    });
-  };
-
-  const handleFeedbackSubmit = (messageId: string) => {
-    setFeedbacks(prev => {
-      const current = prev[messageId];
-      if (!current || !current.comment.trim()) return prev;
-
-      return {
-        ...prev,
-        [messageId]: {
-          ...current,
-          isFormOpen: false,
-          isSubmitted: true
-        }
-      };
-    });
-  };
-
-  const closeOpenFeedbackForms = () => {
-    setFeedbacks(prev => {
-      let hasOpenForm = false;
-      const next = Object.fromEntries(
-        Object.entries(prev).flatMap(([messageId, feedback]) => {
-          if (!feedback.isFormOpen) return [[messageId, feedback]];
-
-          hasOpenForm = true;
-          if (!feedback.isSubmitted) return [];
-
-          return [[messageId, { ...feedback, isFormOpen: false }]];
-        })
-      );
-
-      return hasOpenForm ? next : prev;
-    });
-  };
-
   return (
     <div
       className="relative mx-auto flex min-h-screen w-full max-w-[448px] flex-col overflow-x-hidden bg-[#f0f9ff] shadow-2xl"
@@ -356,7 +256,6 @@ export default function Chatbot() {
         </p>
       </div>
 
-<<<<<<< HEAD
       {/* ── 메시지 영역 ── */}
       <div className={`flex-1 space-y-8 overflow-y-auto px-6 py-4 transition-all ${isSuggestOpen ? "pb-[320px]" : "pb-52"}`}>
         {messages.map(msg => (
@@ -392,113 +291,13 @@ export default function Chatbot() {
                     onFeedbackSubmit={handleFeedbackSubmit}
                   />
                 </div>
-=======
-      {/* 채팅 메시지 영역 */}
-      <div onClick={closeOpenFeedbackForms} className="flex-1 px-6 py-4 space-y-8 overflow-y-auto overflow-x-hidden bg-transparent">
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
-            <div className={`flex ${msg.sender === "user" ? "justify-end" : "items-start gap-2.5"} w-full`}>
-              {msg.sender === "bot" && (
-                <img
-                  src={iconGaonLogo}
-                  alt="가온이"
-                  className="mt-1 size-9 shrink-0 object-contain"
-                />
-              )}
-              {msg.sender === "user" && (
-                <span className="self-end mb-1 mr-2 text-[10px] font-semibold tracking-tight text-[#adb5bd]">
-                  {msg.timestamp}
-                </span>
-              )}
-              <div className={`relative max-w-[66%] px-5 py-4 rounded-[18px] flex flex-col shadow-md border 
-                ${msg.sender === "user" 
-                  ? "bg-[#5eb9ca] text-white rounded-tr-none border-transparent shadow-[#5eb9ca]/20" 
-                  : "bg-white text-[#3e5b6a] rounded-tl-none border-[#eef6f7]"
-                }`}>
-                <span className="text-[15px] leading-[1.6] font-medium whitespace-pre-wrap tracking-tight">
-                  {msg.text}
-                </span>
-              </div>
-              {msg.sender === "bot" && (
-                <span className="self-end mb-1 ml-2 text-[10px] font-semibold tracking-tight text-[#adb5bd]">
-                  {msg.timestamp}
-                </span>
->>>>>>> 2f20c5a7bacd26848300aeb90cf88fcdfa09dec7
               )}
             </div>
-            {msg.sender === "bot" && (
-              <div onClick={(e) => e.stopPropagation()} className="mt-2 ml-[46px] w-[66%] max-w-[66%]">
-                <div className="flex items-center gap-0.5">
-                  {(["like", "dislike"] as FeedbackRating[]).map((rating) => {
-                    const feedback = feedbacks[msg.id];
-                    const isSelected = feedback?.rating === rating;
-                    const isLocked = feedback?.isSubmitted;
-                    const label = rating === "like" ? "좋아요" : "싫어요";
-                    const icon = rating === "like"
-                      ? (isSelected ? iconLikeSelected : iconLike)
-                      : (isSelected ? iconDislikeSelected : iconDislike);
-
-                    return (
-                      <button
-                        key={rating}
-                        type="button"
-                        aria-label={label}
-                        onClick={() => handleFeedbackSelect(msg.id, rating)}
-                        disabled={isLocked}
-                        className={`size-7 rounded-full flex items-center justify-center transition-all ${
-                          isLocked ? "cursor-default" : "hover:bg-[#eef6f7] active:scale-95"
-                        }`}
-                      >
-                        <img src={icon} alt="" className="size-[19px]" />
-                      </button>
-                    );
-                  })}
-                  {feedbacks[msg.id]?.isSubmitted && (
-                    <span className="text-[11px] font-bold text-[#054A57] ml-1 animate-in fade-in slide-in-from-bottom-1 duration-300">
-                      소중한 의견이 전달되었어요!
-                    </span>
-                  )}
-                </div>
-
-                {feedbacks[msg.id]?.isFormOpen && (
-                  <div className="mt-2 p-3 bg-white border border-[#eef6f7] rounded-[16px] shadow-sm">
-                    <textarea
-                      value={feedbacks[msg.id]?.comment ?? ""}
-                      onChange={(e) => handleFeedbackCommentChange(msg.id, e.target.value)}
-                      placeholder="답변에 대한 피드백을 남겨주세요"
-                      className="w-full min-h-[74px] resize-none bg-[#f8fbff] rounded-[12px] px-3 py-2 text-[12.5px] font-semibold text-[#3e5b6a] outline-none border border-transparent focus:bg-white focus:border-[#5eb9ca]/40 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleFeedbackSubmit(msg.id)}
-                      disabled={!feedbacks[msg.id]?.comment.trim()}
-                      className="mt-2 w-full h-10 bg-[#054A57] disabled:bg-[#d8e3e6] disabled:text-[#8aa2aa] text-white rounded-[12px] text-[12.5px] font-extrabold active:scale-[0.98] transition-all"
-                    >
-                      피드백 보내기
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         ))}
-<<<<<<< HEAD
 
         {isTyping && <TypingIndicator />}
         <div ref={messagesEndRef} />
-=======
-        {isTyping && (
-          <div className="flex items-start gap-2.5">
-            <img
-              src={iconGaonLogo}
-              alt="가온이"
-              className="mt-1 size-9 shrink-0 object-contain"
-            />
-            <TypingIndicator />
-          </div>
-        )}
-        <div style={{ height: isSuggestOpen ? "320px" : "210px" }} className="transition-all duration-300 pointer-events-none" ref={messagesEndRef} />
->>>>>>> 2f20c5a7bacd26848300aeb90cf88fcdfa09dec7
       </div>
 
       {/* ── 하단 인터페이스 ── */}
@@ -516,7 +315,6 @@ export default function Chatbot() {
               {isSuggestOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
             </button>
           </div>
-<<<<<<< HEAD
 
           {/* 추천 질문 목록 */}
           <div className={`grid grid-cols-2 gap-2 overflow-hidden transition-all duration-300 ease-in-out ${
@@ -531,17 +329,10 @@ export default function Chatbot() {
                 <span className="break-keep text-center text-[11.5px] font-extrabold leading-[1.3] text-nav-primary/70 whitespace-normal">
                   {q}
                 </span>
-=======
-          <div className={`grid grid-cols-2 gap-2 transition-all duration-300 ease-in-out ${isSuggestOpen ? "max-h-[200px] opacity-100 mb-2" : "max-h-0 opacity-0 mb-0"} overflow-visible`}>
-            {suggestedQuestions.map((q, i) => (
-              <button key={i} onClick={() => handleSend(q)} className="w-full relative px-3 py-2.5 bg-white border border-[#eef6f7] rounded-[18px] shadow-sm active:scale-95 transition-all min-h-[35px]">
-                <span className="text-[11.5px] text-[#5a7685] font-bold text-center leading-[1.3] whitespace-normal break-keep">{q}</span>
->>>>>>> 2f20c5a7bacd26848300aeb90cf88fcdfa09dec7
               </button>
             ))}
           </div>
         </div>
-<<<<<<< HEAD
 
         {/* 입력창 */}
         <div className="relative z-10 flex items-center gap-3 px-6 pb-5 pt-2">
@@ -557,18 +348,6 @@ export default function Chatbot() {
             className="flex size-12 shrink-0 items-center justify-center rounded-full bg-nav-accent shadow-lg transition-all active:scale-90"
           >
             <img src={iconShortcut} alt="전송" className="size-5 brightness-0 invert" />
-=======
-        <div className="px-6 pt-2 pb-5 flex gap-3 items-center relative z-10">
-          <input 
-            value={inputValue} 
-            onChange={(e) => setInputValue(e.target.value)} 
-            onKeyDown={(e) => e.key === "Enter" && handleSend()} 
-            placeholder="메시지를 입력하세요..." 
-            className="flex-1 bg-[#f1f5f9] rounded-[22px] px-5 py-3 outline-none text-[14.5px] font-medium text-[#3e5b6a] border border-transparent focus:bg-white focus:border-[#5eb9ca]/30 transition-all" 
-          />
-          <button onClick={() => handleSend()} className="size-[50px] bg-[#5eb9ca] rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all shrink-0">
-            <img src={iconShortcut} alt="send" className="w-8 h-8 brightness-0 invert" />
->>>>>>> 2f20c5a7bacd26848300aeb90cf88fcdfa09dec7
           </button>
         </div>
       </div>
