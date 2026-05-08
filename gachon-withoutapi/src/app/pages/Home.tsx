@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import BottomNav from "../components/BottomNav";
+<<<<<<< HEAD
 import iconLogo from "../icons/GAONI.svg";
 import iconTogoChatbot from "../icons/TogoChatbot.svg";
 
@@ -21,6 +22,24 @@ function HeaderSection() {
           className="h-auto w-[85px] scale-[2.4] object-contain transition-all"
         />
       </div>
+=======
+import iconShortcut from "../icons/gaon-logo.svg";
+import messageIcon from "../icons/typing.svg";
+// 로그인 상태를 가져오는 훅(이미 사용 중인 context가 있다면 그것을 사용하세요)
+// 예: import { useAuth } from "../contexts/AuthContext"; 
+
+function HeaderSection() {
+  return (
+    <div className="flex flex-row items-center pt-[64px] w-[340px] mx-auto gap-4 text-left font-sans antialiased">
+      {/* 아이콘 영역 */}
+  <div className="shrink-0 flex items-center justify-center">
+    <img
+      src={iconShortcut}
+      alt="가온이 로고"
+      className="w-[100px] h-auto object-contain"
+    />
+  </div>
+>>>>>>> 2f20c5a7bacd26848300aeb90cf88fcdfa09dec7
 
       {/* 텍스트 */}
       <div className="flex flex-1 flex-col items-start">
@@ -72,6 +91,7 @@ export default function Home() {
           to="/chatbot"
           className="flex h-[58px] w-full items-center justify-center gap-2.5 rounded-[18px] bg-nav-accent shadow-md transition-all active:scale-95"
         >
+<<<<<<< HEAD
           <img
             src={iconTogoChatbot}
             alt=""
@@ -79,6 +99,10 @@ export default function Home() {
             className="size-5 brightness-0 invert opacity-90"
           />
           <span className="text-[16px] font-bold tracking-tight text-white">
+=======
+          <img src={messageIcon} alt="" className="size-6 brightness-0 invert" />
+          <p className="text-[16px] font-bold text-white tracking-tight">
+>>>>>>> 2f20c5a7bacd26848300aeb90cf88fcdfa09dec7
             궁금한 내용을 바로 물어보세요!
           </span>
         </Link>

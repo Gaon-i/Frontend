@@ -77,9 +77,60 @@ export default function BottomNav() {
 
   const [modal, setModal] = useState<ModalState>({ show: false, message: "" });
 
+<<<<<<< HEAD
   const isActive = useCallback(
     (path: string) => location.pathname === path,
     [location.pathname]
+=======
+  // [수정] 실제 sessionStorage를 체크하여 로그인 여부 판단
+  const checkAuth = () => {
+    return sessionStorage.getItem("isLoggedIn") === "true";
+  };
+
+  // [수정] 클릭 핸들러: 비로그인 상태일 때만 모달을 띄움
+  const handleNavClick = (e: React.MouseEvent, path: string) => {
+    // 민원(/complaints) 또는 내정보(/users/me) 접근 시 로그인 체크
+    if ((path === "/complaints" || path === "/users/me") && !checkAuth()) {
+      e.preventDefault(); // 페이지 이동 방지
+      setModalConfig({
+        show: true,
+        message: "로그인이 필요한 서비스입니다.\n로그인 페이지로 이동하시겠습니까?",
+        path: path
+      });
+    }
+  };
+
+  const handleConfirm = () => {
+    setModalConfig({ ...modalConfig, show: false });
+    navigate("/auth/login"); // 로그인 페이지로 이동
+  };
+
+  const handleCancel = () => {
+    setModalConfig({ ...modalConfig, show: false });
+  };
+
+  // 아이콘 스타일
+  const iconClass = "size-[26px] transition-all duration-300 z-10";
+  const activeFilter = {
+    filter: "invert(70%) sepia(22%) saturate(1190%) hue-rotate(157deg) brightness(47%) contrast(96%)"
+  };
+  const inactiveFilter = { opacity: 0.4, filter: "grayscale(20%)" };
+
+  // 활성 배경 애니메이션
+  const ActiveBg = ({ path }: { path: string }) => (
+    <div className={`absolute -top-1.5 left-1/2 -translate-x-1/2 size-[48px] 
+      bg-gradient-to-tr from-[#eef9fa] to-[#dcf2f5] 
+      rounded-[14px] -z-10 
+      shadow-[0_4px_12px_rgba(94,185,202,0.15)] 
+      ring-1 ring-white/60 
+      backdrop-blur-[1px]
+      transition-all duration-300 ease-out
+      ${isActive(path)
+        ? "opacity-100 scale-100 animate-in fade-in zoom-in-90"
+        : "opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100"
+      }`}
+    />
+>>>>>>> 2f20c5a7bacd26848300aeb90cf88fcdfa09dec7
   );
 
   const handleNavClick = useCallback(
@@ -126,7 +177,11 @@ export default function BottomNav() {
               <div className="mt-2 flex w-full gap-3">
                 <button
                   onClick={handleCancel}
+<<<<<<< HEAD
                   className="flex-1 rounded-2xl bg-[#daedf1] py-4 text-[14px] font-bold text-[#3a7a8a] transition-all active:scale-95"
+=======
+                  className="flex-1 py-4 bg-[#e6eef1] rounded-2xl text-[14px] font-bold text-[#607d8b] active:scale-95 transition-all"
+>>>>>>> 2f20c5a7bacd26848300aeb90cf88fcdfa09dec7
                 >
                   취소
                 </button>

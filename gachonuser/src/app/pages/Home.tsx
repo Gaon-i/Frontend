@@ -1,22 +1,20 @@
 import { Link, useNavigate } from "react-router";
 import BottomNav from "../components/BottomNav";
-import iconShortcut from "../icons/Togo.svg";
+import iconShortcut from "../icons/gaon-logo.svg";
+import messageIcon from "../icons/Togo.svg";
 // 로그인 상태를 가져오는 훅(이미 사용 중인 context가 있다면 그것을 사용하세요)
 // 예: import { useAuth } from "../contexts/AuthContext"; 
 
 function HeaderSection() {
   return (
-    <div className="flex flex-row items-start pt-[64px] w-[340px] mx-auto gap-4 text-left font-sans antialiased">
+    <div className="flex flex-row items-center pt-[64px] w-[340px] mx-auto gap-4 text-left font-sans antialiased">
       {/* 아이콘 영역 */}
-      <div className="relative shrink-0 pt-1">
-        <div className="absolute inset-0 bg-[#21dcff] blur-[10px] opacity-20"></div>
-        <div className="relative bg-[#5eb9ca] rounded-[12px] p-2 flex items-center justify-center shadow-sm shadow-[#5eb9ca]/20">
-          <img 
-            src={iconShortcut} 
-            alt="가온이 아이콘" 
-            className="w-6 h-6 brightness-0 invert transition-all" 
-          />
-        </div>
+      <div className="relative shrink-0 flex items-center justify-center">
+        <img 
+          src={iconShortcut} 
+          alt="가온이 로고" 
+          className="w-[78px] h-[59px] object-contain transition-all translate-y-2" 
+        />
       </div>
 
       {/* 텍스트 영역 */}
@@ -25,9 +23,11 @@ function HeaderSection() {
           똑똑한 기숙사 생활의 시작
         </p>
 
-        <h1 className="font-black text-[28px] text-[#054a57] leading-[1.2] tracking-tighter px-0.5">
-          가천대 기숙사 AI <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5eb9ca] to-[#21dcff]">
+        <h1 className="font-black text-[#054a57] leading-[1.12] tracking-tight px-0.5">
+          <span className="block text-[22px] font-extrabold text-[#476978]">
+            가천대 기숙사 AI
+          </span>
+          <span className="block text-[34px] text-transparent bg-clip-text bg-gradient-to-r from-[#5eb9ca] to-[#21dcff]">
             가온이
           </span>
         </h1>
@@ -69,7 +69,7 @@ export default function Home() {
           to={"/chatbot"}
           className="w-full h-[62px] bg-[#5eb9ca] rounded-[20px] flex items-center justify-center gap-3 shadow-lg shadow-[#5eb9ca]/25 active:scale-95 transition-transform"
         >
-          <img src={iconShortcut} alt="" className="size-5 brightness-0 invert" />
+          <img src={messageIcon} alt="" className="size-5 brightness-0 invert" />
           <p className="text-[16px] font-bold text-white tracking-tight">
             궁금한 내용을 바로 물어보세요!
           </p>
