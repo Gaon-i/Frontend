@@ -269,7 +269,7 @@ export default function Chatbot() {
             <div className={`flex max-w-[75%] flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
               {/* 말풍선 + 타임스탬프 */}
               <div className={`flex items-end gap-2 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                <div className={`rounded-[18px] px-5 py-4 text-[14.5px] font-semibold leading-[1.65] shadow-md whitespace-pre-wrap border ${
+                <div className={`rounded-[18px] px-5 py-4 text-[15px] font-medium leading-[1.6] shadow-md whitespace-pre-wrap border ${
                   msg.sender === "user"
                     ? "rounded-tr-none border-transparent bg-nav-accent text-white shadow-nav-accent/20"
                     : "rounded-tl-none border-[#eef6f7] bg-white text-nav-primary"
@@ -326,7 +326,7 @@ export default function Chatbot() {
                 onClick={() => handleSend(q)}
                 className="min-h-[35px] w-full rounded-[18px] border border-[#eef6f7] bg-white px-3 py-2.5 shadow-sm transition-all active:scale-95"
               >
-                <span className="break-keep text-center text-[11.5px] font-extrabold leading-[1.3] text-nav-primary/70 whitespace-normal">
+                <span className="break-keep text-center text-[11.5px] font-bold leading-[1.3] text-nav-primary/70 whitespace-normal">
                   {q}
                 </span>
               </button>
@@ -341,13 +341,13 @@ export default function Chatbot() {
             onChange={e => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="메시지를 입력하세요..."
-            className="flex-1 rounded-[22px] border border-transparent bg-[#f1f5f9] px-5 py-3.5 text-[14.5px] font-bold text-nav-primary outline-none transition-all focus:border-nav-accent/30 focus:bg-white"
+            className="flex-1 rounded-[22px] border border-transparent bg-[#f1f5f9] px-5 py-3.5 text-[14.5px] font-medium text-nav-primary outline-none transition-all focus:border-nav-accent/30 focus:bg-white"
           />
           <button
             onClick={() => handleSend()}
             className="flex size-12 shrink-0 items-center justify-center rounded-full bg-nav-accent shadow-lg transition-all active:scale-90"
           >
-            <img src={iconShortcut} alt="전송" className="size-5 brightness-0 invert" />
+            <img src={iconShortcut} alt="전송" className="size-8 brightness-0 invert" />
           </button>
         </div>
       </div>

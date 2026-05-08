@@ -76,7 +76,7 @@ export default function Home() {
             src={iconTogoChatbot}
             alt=""
             aria-hidden="true"
-            className="size-5 brightness-0 invert opacity-90"
+            className="size-6 brightness-0 invert opacity-90"
           />
           <span className="text-[16px] font-bold tracking-tight text-white">
             궁금한 내용을 바로 물어보세요!
