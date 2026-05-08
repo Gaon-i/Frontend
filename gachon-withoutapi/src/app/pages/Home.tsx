@@ -67,7 +67,7 @@ export default function Home() {
       </div>
 
       {/* ── 챗봇 바로가기 버튼 ── */}
-      <div className="fixed bottom-[105px] left-1/2 z-30 w-full max-w-[448px] -translate-x-1/2 px-6">
+      <div className="fixed bottom-[130px] left-1/2 z-30 w-full max-w-[448px] -translate-x-1/2 px-6">
         <Link
           to="/chatbot"
           className="flex h-[58px] w-full items-center justify-center gap-2.5 rounded-[18px] bg-nav-accent shadow-md transition-all active:scale-95"
