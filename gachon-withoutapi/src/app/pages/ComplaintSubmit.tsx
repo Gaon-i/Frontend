@@ -1,136 +1,201 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
-import { 
-  ChevronLeft, X, Loader2, Check, ChevronDown, 
-  Wrench, ScrollText, Eraser, Volume2, HelpCircle, ImagePlus 
+import {
+  ChevronLeft, X, Loader2, Check, ChevronDown,
+  Wrench, ScrollText, Eraser, Volume2, HelpCircle, ImagePlus,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+// ─── 타입 ─────────────────────────────────────────────────
+
+interface CategoryOption {
+  id: string;
+  name: string;
+  Icon: LucideIcon;
+  iconClass: string;
+}
+
+interface ImageEntry {
+  file: File;
+  previewUrl: string;
+}
+
+interface ComplaintData {
+  complaintId: number;
+  category: string;
+  title: string;
+  content: string;
+  status: string;
+  queueNo: number;
+  adminComment: null;
+  createdAt: string;
+}
+
+// ─── 상수 ─────────────────────────────────────────────────
+
+const CATEGORY_OPTIONS: CategoryOption[] = [
+  { id: "FACILITY", name: "시설 수리", Icon: Wrench,      iconClass: "text-orange-400" },
+  { id: "RULE",     name: "생활 규칙", Icon: ScrollText,  iconClass: "text-blue-400"   },
+  { id: "CLEANING", name: "청소 요청", Icon: Eraser,      iconClass: "text-green-400"  },
+  { id: "NOISE",    name: "소음 신고", Icon: Volume2,     iconClass: "text-red-400"    },
+  { id: "ETC",      name: "기타 문의", Icon: HelpCircle,  iconClass: "text-purple-400" },
+];
+
+const MAX_IMAGES    = 5;
+const SUBMIT_DELAY  = 800;
+const STORAGE_KEY   = "mock_complaints";
+
+const LABEL_CLASS = "ml-1 flex items-center text-[11px] font-black uppercase tracking-widest text-nav-inactive";
+
+// ─── 메인 컴포넌트 ─────────────────────────────────────────
 
 export default function ComplaintSubmit() {
-  const navigate = useNavigate();
+  const navigate     = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
 
-  const [loading, setLoading] = useState(false);
-  const [category, setCategory] = useState("FACILITY");
-  const [categoryLabel, setCategoryLabel] = useState("시설 수리");
-  const [openSelect, setOpenSelect] = useState(false);
-
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
-
-  const categoryOptions = [
-    { id: "FACILITY", name: "시설 수리", icon: <Wrench size={20} className="text-orange-400" /> },
-    { id: "RULE", name: "생활 규칙", icon: <ScrollText size={20} className="text-blue-400" /> },
-    { id: "CLEANING", name: "청소 요청", icon: <Eraser size={20} className="text-green-400" /> },
-    { id: "NOISE", name: "소음 신고", icon: <Volume2 size={20} className="text-red-400" /> },
-    { id: "ETC", name: "기타 문의", icon: <HelpCircle size={20} className="text-purple-400" /> },
-  ];
+  const [isLoggedIn] = useState(() => sessionStorage.getItem("isLoggedIn") === "true");
+  const [loading, setLoading]         = useState(false);
+  const [categoryId, setCategoryId]   = useState("FACILITY");
+  const [openSelect, setOpenSelect]   = useState(false);
+  const [title, setTitle]             = useState("");
+  const [content, setContent]         = useState("");
+  const [images, setImages]           = useState<ImageEntry[]>([]);
 
   useEffect(() => {
     if (!isLoggedIn) navigate("/auth/login");
   }, [isLoggedIn, navigate]);
 
-  const handleSubmit = useCallback(async () => {
-    if (!title || !content) return;
+  // ── 이미지 URL 메모리 해제 ──
+  useEffect(() => {
+    return () => {
+      images.forEach(img => URL.revokeObjectURL(img.previewUrl));
+    };
+  }, [images]);
+
+  // ── 파생값: categoryId → category 객체 ──
+  const selectedCategory = CATEGORY_OPTIONS.find(o => o.id === categoryId)!;
+
+  // ── 이미지 추가 ──
+  const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const newFiles = Array.from(e.target.files);
+
+    setImages(prev => {
+      if (prev.length + newFiles.length > MAX_IMAGES) {
+        alert(`최대 ${MAX_IMAGES}장까지 첨부 가능합니다.`);
+        return prev;
+      }
+      const newEntries: ImageEntry[] = newFiles.map(file => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+      }));
+      return [...prev, ...newEntries];
+    });
+
+    // input 초기화 (같은 파일 재선택 허용)
+    e.target.value = "";
+  }, []);
+
+  // ── 이미지 제거 ──
+  const removeImage = useCallback((index: number) => {
+    setImages(prev => {
+      URL.revokeObjectURL(prev[index].previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
+
+  // ── 제출 ──
+  const handleSubmit = useCallback(() => {
+    if (!title.trim() || !content.trim()) return;
     setLoading(true);
+
+    // TODO: 실제 API 호출로 교체
     setTimeout(() => {
       try {
-        const savedData = JSON.parse(localStorage.getItem("mock_complaints") || "[]");
-        const nextId = savedData.length > 0 ? Math.max(...savedData.map((c: any) => c.complaintId)) + 1 : 1;
-        const newComplaint = {
-          complaintId: nextId,
-          category,
-          title,
-          content,
-          status: "RECEIVED",
-          queueNo: savedData.filter((c: any) => c.status === "RECEIVED").length + 1,
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") as ComplaintData[];
+        const nextId = saved.length > 0
+          ? Math.max(...saved.map(c => c.complaintId)) + 1
+          : 1;
+        const newComplaint: ComplaintData = {
+          complaintId:  nextId,
+          category:     categoryId,
+          title:        title.trim(),
+          content:      content.trim(),
+          status:       "RECEIVED",
+          queueNo:      saved.filter(c => c.status === "RECEIVED").length + 1,
           adminComment: null,
-          createdAt: new Date().toISOString(),
+          createdAt:    new Date().toISOString(),
         };
-        localStorage.setItem("mock_complaints", JSON.stringify([...savedData, newComplaint]));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([...saved, newComplaint]));
         navigate(-1);
-      } catch (error) {
+      } catch {
         alert("민원 접수 중 오류가 발생했습니다.");
       } finally {
         setLoading(false);
       }
-    }, 800);
-  }, [title, content, category, navigate]);
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      if (imageFiles.length + newFiles.length > 5) return alert("최대 5장까지 첨부 가능합니다.");
-      setImageFiles([...imageFiles, ...newFiles]);
-      setPreviews([...previews, ...newFiles.map(file => URL.createObjectURL(file))]);
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setImageFiles(imageFiles.filter((_, i) => i !== index));
-    setPreviews(previews.filter((_, i) => i !== index));
-  };
+    }, SUBMIT_DELAY);
+  }, [title, content, categoryId, navigate]);
 
   if (!isLoggedIn) return null;
 
   return (
-    <div className="bg-[#f6fbff] min-h-screen w-full max-w-[448px] mx-auto flex flex-col shadow-2xl relative animate-in fade-in duration-500 antialiased font-sans">
-      
-      {/* 헤더 */}
-      <div className="pt-[54px] px-6 pb-4 bg-[#f6fbff]/80 backdrop-blur-xl sticky top-0 z-50 border-b border-[#eef6f7] flex items-center justify-between">
+    <div className="relative mx-auto flex min-h-screen w-full max-w-[448px] flex-col bg-[#f0f9ff] font-sans shadow-2xl animate-in fade-in duration-500 antialiased">
+
+      {/* ── 헤더 ── */}
+      <div className="sticky top-0 z-50 flex items-center justify-between border-b border-[#eef6f7] bg-[#f0f9ff]/80 px-6 pb-4 pt-14 backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-white/50 rounded-full transition-all active:scale-90">
-            <ChevronLeft className="size-6 text-[#054a57]" />
+          <button
+            onClick={() => navigate(-1)}
+            className="-ml-2 rounded-full p-2 transition-all hover:bg-white/50 active:scale-90"
+          >
+            <ChevronLeft className="size-6 text-nav-primary" />
           </button>
-          <h1 className="font-bold text-[22px] text-[#054a57] tracking-tight">민원 작성</h1>
+          <h1 className="text-[22px] font-bold tracking-tight text-nav-primary">민원 작성</h1>
         </div>
       </div>
 
-      {/* 메인 컨텐츠 영역 */}
-      <div className="flex-1 px-6 pt-6 pb-40 space-y-7 overflow-y-auto">
-        
-        {/* 1. 카테고리 선택 */}
-        <div className="space-y-2 relative">
-          <label className="text-[11px] font-black text-[#829496] uppercase tracking-widest ml-1 flex items-center">
-            카테고리 <span className="text-red-500 ml-1">*</span>
+      {/* ── 메인 컨텐츠 ── */}
+      <div className="flex-1 space-y-7 overflow-y-auto px-6 pb-40 pt-6">
+
+        {/* 카테고리 선택 */}
+        <div className="relative space-y-2">
+          <label className={LABEL_CLASS}>
+            카테고리 <span className="ml-1 text-red-500">*</span>
           </label>
-          <button 
-            type="button" 
-            onClick={() => setOpenSelect(!openSelect)} 
-            className={`w-full bg-white border border-[#eef6f7] transition-all duration-300 rounded-[22px] px-5 h-[60px] flex items-center justify-between shadow-sm ${
-              openSelect ? 'border-[#5eb9ca] shadow-lg shadow-[#5eb9ca]/10' : ''
+          <button
+            type="button"
+            onClick={() => setOpenSelect(v => !v)}
+            className={`flex h-[60px] w-full items-center justify-between rounded-[22px] border bg-white px-5 shadow-sm transition-all duration-300 ${
+              openSelect ? "border-nav-accent shadow-lg shadow-nav-accent/10" : "border-[#eef6f7]"
             }`}
           >
             <div className="flex items-center gap-3.5">
-              <div className="flex items-center justify-center">
-                {categoryOptions.find(o => o.id === category)?.icon}
-              </div>
-              <span className="text-[15px] font-bold text-[#054a57]">{categoryLabel}</span>
+              <selectedCategory.Icon size={20} className={selectedCategory.iconClass} />
+              <span className="text-[15px] font-bold text-nav-primary">{selectedCategory.name}</span>
             </div>
-            <ChevronDown className={`size-5 text-[#94a3b8] transition-transform duration-500 ${openSelect ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`size-5 text-nav-inactive transition-transform duration-500 ${openSelect ? "rotate-180" : ""}`} />
           </button>
 
           {openSelect && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setOpenSelect(false)} />
-              <div className="absolute z-50 w-full mt-1.5 bg-white/95 backdrop-blur-2xl border border-[#eef6f7] rounded-[24px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                {categoryOptions.map((opt) => (
-                  <button 
-                    key={opt.id} 
-                    type="button" 
-                    onClick={() => { setCategory(opt.id); setCategoryLabel(opt.name); setOpenSelect(false); }} 
-                    className="w-full px-6 py-4.5 text-left flex items-center justify-between hover:bg-[#f8fbff] transition-colors border-b border-[#fcfdfe] last:border-none"
+              <div className="absolute z-50 mt-1.5 w-full animate-in fade-in zoom-in-95 duration-200 overflow-hidden rounded-[24px] border border-[#eef6f7] bg-white/95 shadow-2xl backdrop-blur-2xl">
+                {CATEGORY_OPTIONS.map(opt => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => { setCategoryId(opt.id); setOpenSelect(false); }}
+                    className="flex w-full items-center justify-between border-b border-[#eef6f7] px-6 py-[18px] text-left transition-colors last:border-none hover:bg-[#f8fbff]"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="size-6 flex items-center justify-center">
-                        {opt.icon}
-                      </div>
-                      <span className={`text-[15px] font-bold ${category === opt.id ? 'text-[#5eb9ca]' : 'text-[#475569]'}`}>{opt.name}</span>
+                      <opt.Icon size={20} className={opt.iconClass} />
+                      <span className={`text-[15px] font-bold ${
+                        categoryId === opt.id ? "text-nav-accent" : "text-nav-primary"
+                      }`}>
+                        {opt.name}
+                      </span>
                     </div>
-                    {category === opt.id && <Check size={20} className="text-[#5eb9ca]" />}
+                    {categoryId === opt.id && <Check size={20} className="text-nav-accent" />}
                   </button>
                 ))}
               </div>
@@ -138,74 +203,93 @@ export default function ComplaintSubmit() {
           )}
         </div>
 
-        {/* 2. 제목 입력 */}
+        {/* 제목 */}
         <div className="space-y-2">
-          <label className="text-[11px] font-black text-[#829496] uppercase tracking-widest ml-1 flex items-center">
-            제목 <span className="text-red-500 ml-1">*</span>
+          <label className={LABEL_CLASS}>
+            제목 <span className="ml-1 text-red-500">*</span>
           </label>
-          <input 
-            type="text" 
-            value={title} 
-            onChange={e => setTitle(e.target.value)} 
-            placeholder="제목을 입력하세요" 
-            className="w-full h-[60px] px-6 bg-white border border-[#eef6f7] focus:border-[#5eb9ca] rounded-[22px] text-[15px] font-bold text-[#054a57] outline-none transition-all shadow-sm placeholder:text-[#adb5bd]" 
+          <input
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="제목을 입력하세요"
+            className="h-[60px] w-full rounded-[22px] border border-[#eef6f7] bg-white px-6 text-[15px] font-bold text-nav-primary shadow-sm outline-none transition-all placeholder:text-nav-inactive focus:border-nav-accent"
           />
         </div>
 
-        {/* 3. 본문 입력 */}
+        {/* 본문 */}
         <div className="space-y-2">
-          <label className="text-[11px] font-black text-[#829496] uppercase tracking-widest ml-1 flex items-center">
-            민원 내용 <span className="text-red-500 ml-1">*</span>
+          <label className={LABEL_CLASS}>
+            민원 내용 <span className="ml-1 text-red-500">*</span>
           </label>
-          <textarea 
-            value={content} 
-            onChange={e => setContent(e.target.value)} 
-            placeholder="민원 내용을 자세히 입력해주세요" 
-            className="w-full min-h-[180px] p-6 bg-white border border-[#eef6f7] focus:border-[#5eb9ca] rounded-[28px] text-[15px] font-medium text-[#054a57] outline-none transition-all shadow-sm resize-none leading-relaxed placeholder:text-[#adb5bd]" 
+          <textarea
+            value={content}
+            onChange={e => setContent(e.target.value)}
+            placeholder="민원 내용을 자세히 입력해주세요"
+            className="w-full min-h-[180px] resize-none rounded-[28px] border border-[#eef6f7] bg-white p-6 text-[15px] font-medium leading-relaxed text-nav-primary shadow-sm outline-none transition-all placeholder:text-nav-inactive focus:border-nav-accent"
           />
         </div>
 
-        {/* 4. 이미지 업로드 */}
+        {/* 이미지 업로드 */}
         <div className="space-y-3">
-          <div className="flex justify-between items-center px-1">
-            <label className="text-[11px] font-black text-[#829496] uppercase tracking-widest flex items-center">
-              사진 첨부 <span className="text-[10px] text-[#adb5bd] font-medium ml-2">(선택)</span>
+          <div className="flex items-center justify-between px-1">
+            <label className={LABEL_CLASS}>
+              사진 첨부
+              <span className="ml-2 text-[10px] font-medium text-nav-inactive">(선택)</span>
             </label>
-            <span className={`text-[11px] font-bold ${imageFiles.length >= 5 ? 'text-red-400' : 'text-[#5eb9ca]'}`}>{imageFiles.length}/5</span>
+            <span className={`text-[11px] font-bold ${images.length >= MAX_IMAGES ? "text-red-400" : "text-nav-accent"}`}>
+              {images.length}/{MAX_IMAGES}
+            </span>
           </div>
+
           <div className="grid grid-cols-4 gap-3">
-            <button 
-              onClick={() => fileInputRef.current?.click()} 
-              className="aspect-square bg-white border border-[#eef6f7] rounded-[20px] flex flex-col items-center justify-center text-[#5eb9ca] hover:border-[#5eb9ca] hover:bg-[#f8fbff] transition-all group shadow-sm"
+            {/* 추가 버튼 */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="aspect-square flex flex-col items-center justify-center rounded-[20px] border border-[#eef6f7] bg-white text-nav-accent shadow-sm transition-all hover:border-nav-accent hover:bg-[#f8fbff]"
             >
               <ImagePlus size={24} />
-              <span className="text-[9px] font-black mt-1.5 uppercase">추가하기</span>
+              <span className="mt-1.5 text-[9px] font-black uppercase">추가하기</span>
             </button>
-            {previews.map((src, i) => (
-              <div key={i} className="relative aspect-square rounded-[20px] overflow-hidden border border-[#eef6f7] shadow-sm animate-in zoom-in-95">
-                <img src={src} className="w-full h-full object-cover" alt="preview" />
-                <button onClick={() => removeImage(i)} className="absolute top-1.5 right-1.5 bg-black/40 backdrop-blur-md rounded-full p-1 text-white hover:bg-red-500 transition-colors">
+
+            {/* 미리보기 */}
+            {images.map((img, i) => (
+              <div key={img.previewUrl} className="relative aspect-square animate-in zoom-in-95 overflow-hidden rounded-[20px] border border-[#eef6f7] shadow-sm">
+                <img src={img.previewUrl} alt={`첨부 이미지 ${i + 1}`} className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeImage(i)}
+                  className="absolute right-1.5 top-1.5 rounded-full bg-black/40 p-1 text-white backdrop-blur-md transition-colors hover:bg-red-500"
+                >
                   <X className="size-3" />
                 </button>
               </div>
             ))}
           </div>
-          <input type="file" ref={fileInputRef} onChange={handleImageChange} multiple accept="image/*" className="hidden" />
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageChange}
+            multiple
+            accept="image/*"
+            className="hidden"
+          />
         </div>
       </div>
 
-      {/* 하단 버튼 바 */}
-      <div className="fixed bottom-0 w-full max-w-[448px] p-6 pb-8 bg-gradient-to-t from-[#f6fbff] via-[#f6fbff] to-transparent z-40">
-        <button 
-          onClick={handleSubmit} 
-          disabled={loading || !title || !content} 
-          className="w-full h-[64px] bg-[#054a57] disabled:bg-[#adb5bd] text-white rounded-[24px] font-bold text-[16px] shadow-xl shadow-[#054a57]/10 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
+      {/* ── 하단 제출 버튼 ── */}
+      <div className="fixed bottom-0 z-40 w-full max-w-[448px] bg-gradient-to-t from-[#f0f9ff] via-[#f0f9ff] to-transparent p-6 pb-8">
+        <button
+          onClick={handleSubmit}
+          disabled={loading || !title.trim() || !content.trim()}
+          className="flex h-16 w-full items-center justify-center gap-3 rounded-[24px] bg-nav-accent font-bold text-[16px] text-white shadow-xl shadow-nav-accent/20 transition-all active:scale-[0.98] disabled:bg-nav-inactive"
         >
-          {loading ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <span className="tracking-tight">민원 접수하기</span>
-          )}
+          {loading
+            ? <Loader2 className="animate-spin" />
+            : <span className="tracking-tight">민원 접수하기</span>
+          }
         </button>
       </div>
     </div>

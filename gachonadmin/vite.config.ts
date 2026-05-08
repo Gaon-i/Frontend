@@ -22,7 +22,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'http://15.165.98.91',
+        target: 'http://localhost:8080',
         // 백엔드 서버 주소
         changeOrigin: true,
         // 도메인 설정을 맞춰줌
