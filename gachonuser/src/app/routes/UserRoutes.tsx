@@ -26,7 +26,7 @@ export const UserRoutes = [
     Component: FindPassword,
   },
   {
-    path: "/chatbot/questions",
+    path: "/chatbot",
     Component: Chatbot,
   },
   {
