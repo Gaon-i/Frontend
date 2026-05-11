@@ -8,28 +8,29 @@ import api from "../api/axios";
 
 interface ComplaintImage {
   complaintImageId: number;
-  fileUrl:          string;
+  fileUrl: string;
+  originalName: string;
 }
 
 interface Complaint {
   complaintId: number;
-  category:    string;
-  title:       string;
-  status:      "RECEIVED" | "COMPLETED";
-  createdAt:   string;
+  category: string;
+  title: string;
+  status: "RECEIVED" | "COMPLETED";
+  createdAt: string;
 }
 
 interface ComplaintDetail extends Complaint {
-  content:      string;
-  queueNo?:     number;
+  content: string;
+  queueNo?: number;
   adminComment?: string;
-  images?:      ComplaintImage[];
+  images?: ComplaintImage[];
 }
 
 interface EditState {
-  id:       number;
-  title:    string;
-  content:  string;
+  id: number;
+  title: string;
+  content: string;
   category: string;
 }
 
@@ -42,28 +43,28 @@ type AlertState =
 
 const CATEGORY_MAP: Record<string, string> = {
   FACILITY: "시설 수리",
-  RULE:     "생활 규칙",
+  RULE: "생활 규칙",
   CLEANING: "청소",
-  NOISE:    "소음",
-  ETC:      "기타",
+  NOISE: "소음",
+  ETC: "기타",
 };
 
 const TABS = ["전체", "대기중", "완료"] as const;
 type Tab = typeof TABS[number];
 
 const TAB_STATUS: Record<Tab, string | null> = {
-  전체:  null,
+  전체: null,
   대기중: "RECEIVED",
-  완료:  "COMPLETED",
+  완료: "COMPLETED",
 };
 
 const STATUS_STYLE: Record<string, string> = {
-  RECEIVED:  "bg-nav-active-bg-from text-nav-accent",
+  RECEIVED: "bg-nav-active-bg-from text-nav-accent",
   COMPLETED: "bg-[#e2f1e5] text-[#78c087]",
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  RECEIVED:  "대기중",
+  RECEIVED: "대기중",
   COMPLETED: "완료",
 };
 
@@ -72,11 +73,8 @@ const formatDate = (iso: string) =>
 
 // ─── API 에러 파싱 유틸 ───────────────────────────────────
 
-function parseApiError(error: unknown, fallback: string): string {
-  return (
-    (error as { response?: { data?: { message?: string } } })
-      .response?.data?.message ?? fallback
-  );
+function parseApiError(error: any, fallback: string): string {
+  return error.response?.data?.message ?? fallback;
 }
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────
@@ -84,16 +82,16 @@ function parseApiError(error: unknown, fallback: string): string {
 export default function Complaints() {
   const navigate = useNavigate();
 
-  const [isLoggedIn]  = useState(() => sessionStorage.getItem("isLoggedIn") === "true");
-  const [activeTab, setActiveTab]   = useState<Tab>("전체");
+  const [isLoggedIn] = useState(() => sessionStorage.getItem("isLoggedIn") === "true");
+  const [activeTab, setActiveTab] = useState<Tab>("전체");
   const [complaints, setComplaints] = useState<Complaint[]>([]);
-  const [details, setDetails]       = useState<Record<number, ComplaintDetail>>({});
-  const [loading, setLoading]       = useState(true);
+  const [details, setDetails] = useState<Record<number, ComplaintDetail>>({});
+  const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [alert, setAlert]           = useState<AlertState>({ show: false });
-  const [isSaving, setIsSaving]     = useState(false);
-  const [editState, setEditState]   = useState<EditState | null>(null);
-  const [idsToDelete, setIdsToDelete]     = useState<number[]>([]);
+  const [alert, setAlert] = useState<AlertState>({ show: false });
+  const [isSaving, setIsSaving] = useState(false);
+  const [editState, setEditState] = useState<EditState | null>(null);
+  const [idsToDelete, setIdsToDelete] = useState<number[]>([]);
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
 
   useEffect(() => {
@@ -113,8 +111,12 @@ export default function Complaints() {
       if (response.data.code === 200) {
         setComplaints(response.data.data);
       }
-    } catch (error: unknown) {
-      console.error("민원 목록 조회 실패:", error);
+    } catch (error: any) {
+      const status = error.response?.status;
+      const message =
+        status === 400 ? "잘못된 요청입니다.\n파라미터를 확인해주세요." :
+          "민원 목록을 불러오지 못했습니다.\n잠시 후 다시 시도해주세요.";
+      setAlert({ show: true, isConfirm: false, message });
     } finally {
       setLoading(false);
     }
@@ -135,8 +137,13 @@ export default function Complaints() {
       if (response.data.code === 200) {
         setDetails(prev => ({ ...prev, [id]: response.data.data }));
       }
-    } catch (error: unknown) {
-      setAlert({ show: true, isConfirm: false, message: parseApiError(error, "접근 권한이 없거나 삭제된 게시물입니다.") });
+    } catch (error: any) {
+      const status = error.response?.status;
+      const message =
+        status === 403 ? "본인 민원만 조회할 수 있습니다." :
+          status === 404 ? "존재하지 않는 민원입니다." :
+            parseApiError(error, "접근 권한이 없거나 삭제된 게시물입니다.");
+      setAlert({ show: true, isConfirm: false, message });
       setExpandedId(null);
     }
   }, [expandedId, details]);
@@ -147,8 +154,8 @@ export default function Complaints() {
     setIsSaving(true);
     try {
       const formData = new FormData();
-      formData.append("title",    editState.title);
-      formData.append("content",  editState.content);
+      formData.append("title", editState.title);
+      formData.append("content", editState.content);
       formData.append("category", editState.category);
       idsToDelete.forEach(imgId => formData.append("deleteImageIds", imgId.toString()));
       newImageFiles.forEach(file => formData.append("images", file));
@@ -169,8 +176,14 @@ export default function Complaints() {
         });
         fetchComplaints();
       }
-    } catch (error: unknown) {
-      setAlert({ show: true, isConfirm: false, message: parseApiError(error, "수정에 실패했습니다.") });
+    } catch (error: any) {
+      const status = error.response?.status;
+      const message =
+        status === 403 ? "수정할 수 없는 민원입니다." :
+          status === 404 ? "존재하지 않는 민원입니다." :
+            status === 422 ? "입력값 형식을 확인해주세요." :
+              parseApiError(error, "수정에 실패했습니다.");
+      setAlert({ show: true, isConfirm: false, message });
     } finally {
       setIsSaving(false);
     }
@@ -180,13 +193,18 @@ export default function Complaints() {
   const handleDelete = useCallback(async (targetId: number) => {
     try {
       const response = await api.delete(`/complaints/${targetId}`);
-      if (response.data.code === 200) {
+      if (response.data.code === 200 && response.data.data?.deleted === true) {
         setAlert({ show: false });
         setExpandedId(null);
         fetchComplaints();
       }
-    } catch (error: unknown) {
-      setAlert({ show: true, isConfirm: false, message: parseApiError(error, "삭제할 수 없는 상태이거나 오류가 발생했습니다.") });
+    } catch (error: any) {
+      const status = error.response?.status;
+      const message =
+        status === 403 ? "삭제할 수 없는 민원입니다." :
+          status === 404 ? "존재하지 않는 민원입니다." :
+            parseApiError(error, "삭제할 수 없는 상태이거나 오류가 발생했습니다.");
+      setAlert({ show: true, isConfirm: false, message });
     }
   }, [fetchComplaints]);
 
@@ -207,7 +225,7 @@ export default function Complaints() {
               <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-nav-active-bg-from">
                 {alert.isConfirm
                   ? <AlertCircle className="text-nav-accent" size={28} />
-                  : <Check       className="text-nav-accent" size={28} />
+                  : <Check className="text-nav-accent" size={28} />
                 }
               </div>
               <h2 className="mb-2 text-[17px] font-bold text-nav-primary">알림</h2>
@@ -258,11 +276,10 @@ export default function Complaints() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`h-[44px] flex-1 rounded-[18px] text-[12px] font-bold shadow-sm transition-all ${
-              activeTab === tab
-                ? "bg-nav-accent text-white shadow-nav-accent/20"
-                : "border border-[#eef6f7] bg-white text-nav-inactive"
-            }`}
+            className={`h-[44px] flex-1 rounded-[18px] text-[12px] font-bold shadow-sm transition-all ${activeTab === tab
+              ? "bg-nav-accent text-white shadow-nav-accent/20"
+              : "border border-[#eef6f7] bg-white text-nav-inactive"
+              }`}
           >
             {tab}
           </button>
@@ -277,9 +294,9 @@ export default function Complaints() {
           </div>
         ) : complaints.length > 0 ? (
           complaints.map(c => {
-            const detail     = details[c.complaintId];
+            const detail = details[c.complaintId];
             const isExpanded = expandedId === c.complaintId;
-            const isEditing  = editState?.id === c.complaintId;
+            const isEditing = editState?.id === c.complaintId;
 
             return (
               <div
@@ -415,9 +432,9 @@ export default function Complaints() {
                           onClick={e => {
                             e.stopPropagation();
                             setEditState({
-                              id:       c.complaintId,
-                              title:    detail?.title  ?? c.title,
-                              content:  detail?.content ?? "",
+                              id: c.complaintId,
+                              title: detail?.title ?? c.title,
+                              content: detail?.content ?? "",
                               category: detail?.category ?? c.category,
                             });
                             setIdsToDelete([]);

@@ -491,7 +491,7 @@ export default function AdminStudents() {
 
   return (
     <AdminLayout>
-      <div className="bg-[#f6fbff] min-h-screen w-full overflow-hidden">
+      <div className="bg-[#f6fbff] min-h-screen w-full overflow-x-hidden">
 
         {/* ── Page Header ───────────────────────────────────────────────── */}
         <div className="bg-white border-b border-[#e5f4f5] px-8 py-6">
@@ -501,10 +501,10 @@ export default function AdminStudents() {
           </p>
         </div>
 
-        <div className="p-8 w-full overflow-hidden">
+        <div className="p-8 w-full min-w-0">
 
           {/* ── Search Bar ────────────────────────────────────────────── */}
-          <div className="bg-white rounded-[24px] p-4 md:p-8 shadow-sm mb-8 border border-[#f1f5f9]">
+          <div className="bg-white rounded-[24px] p-4 md:p-8 shadow-sm mb-8 border border-[#f1f5f9] min-w-0">
             <form onSubmit={handleSearch} className="flex flex-col lg:flex-row items-stretch lg:items-end gap-4 lg:gap-5">
               <div className="flex-[3] flex flex-col">
                 <label htmlFor="keyword" className="text-[13px] font-bold text-[#054a57] mb-2 ml-1">

@@ -27,11 +27,8 @@ const formatDate = (date: string) => date.replace(/-/g, ". ");
 
 // ─── API 에러 파싱 유틸 ───────────────────────────────────
 
-function parseApiError(error: unknown, fallback: string): string {
-  return (
-    (error as { response?: { data?: { message?: string } } })
-      .response?.data?.message ?? fallback
-  );
+function parseApiError(error: any, fallback: string): string {
+  return error.response?.data?.message ?? fallback;
 }
 
 // ─── 서브 컴포넌트 ─────────────────────────────────────────
@@ -59,12 +56,13 @@ interface NoticeCardProps {
   isExpanded: boolean;
   detail: NoticeDetail | undefined;
   isDetailLoading: boolean;
+  hasError: boolean;
   onToggle: () => void;
   onRetry: () => void;
 }
 
 function NoticeCard({
-  item, isExpanded, detail, isDetailLoading, onToggle, onRetry,
+  item, isExpanded, detail, isDetailLoading, hasError, onToggle, onRetry,
 }: NoticeCardProps) {
   return (
     <div
@@ -123,7 +121,7 @@ function NoticeCard({
             <Loader2 className="mb-2 animate-spin" size={24} />
             <p className="text-[13px] font-bold">AI가 내용을 분석하고 있습니다...</p>
           </div>
-        ) : (
+        ) : hasError ? (
           // 에러
           <div className="flex flex-col items-center justify-center py-10 text-nav-inactive">
             <AlertCircle size={24} className="mb-2 opacity-50" />
@@ -135,7 +133,7 @@ function NoticeCard({
               다시 시도하기
             </button>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -152,6 +150,7 @@ export default function Notices() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [detailErrors, setDetailErrors] = useState<Record<number, boolean>>({});
 
   // ── 목록 로드 ──
   const fetchNotices = useCallback(async (targetPage: number) => {
@@ -163,11 +162,17 @@ export default function Notices() {
 
       if (response.data.code === 200) {
         const newData: NoticeItem[] = response.data.data;
-        if (newData.length < PAGE_SIZE) setHasMore(false);
-        setNotices(prev => [...prev, ...newData]);
+        // 빈 배열이거나 PAGE_SIZE보다 적으면 마지막 페이지
+        if (newData.length === 0 || newData.length < PAGE_SIZE) setHasMore(false);
+        if (newData.length > 0) setNotices(prev => [...prev, ...newData]);
       }
-    } catch (error: unknown) {
-      console.error("공지 목록 로드 실패:", error);
+    } catch (error: any) {
+      const status = error.response?.status;
+
+      const message =
+        status === 400 ? "잘못된 요청입니다.\n페이지 파라미터를 확인해주세요." :
+          "공지사항을 불러오지 못했습니다.\n잠시 후 다시 시도해주세요.";
+      setAlertMsg(message);
     } finally {
       setIsLoading(false);
     }
@@ -193,7 +198,7 @@ export default function Notices() {
     }
     setExpandedId(id);
 
-    if (details[id]) return; // 이미 로드된 경우 재요청 없음
+    if (details[id]) return;
 
     setIsDetailLoading(true);
     try {
@@ -202,12 +207,14 @@ export default function Notices() {
       if (response.data.code === 200) {
         const detailData = response.data.data;
         setDetails(prev => ({ ...prev, [id]: detailData }));
+        // 성공 시 에러 상태 초기화
+        setDetailErrors(prev => ({ ...prev, [id]: false }));
       } else {
         throw new Error(response.data.message);
       }
-    } catch (error: unknown) {
-      setAlertMsg(parseApiError(error, "상세 내용을 불러오지 못했습니다.\n잠시 후 다시 시도해주세요."));
-      setExpandedId(null);
+    } catch (error: any) {
+      // 카드를 닫지 않고 인라인 에러 UI 표시
+      setDetailErrors(prev => ({ ...prev, [id]: true }));
     } finally {
       setIsDetailLoading(false);
     }
@@ -268,8 +275,18 @@ export default function Notices() {
                 isExpanded={expandedId === item.noticeId}
                 detail={details[item.noticeId]}
                 isDetailLoading={isDetailLoading && expandedId === item.noticeId}
+                hasError={!!detailErrors[item.noticeId]}
                 onToggle={() => toggleNotice(item.noticeId)}
-                onRetry={() => toggleNotice(item.noticeId)}
+                onRetry={() => {
+                  // 재시도 시 에러 상태 초기화 후 재요청
+                  setDetailErrors(prev => ({ ...prev, [item.noticeId]: false }));
+                  setDetails(prev => {
+                    const next = { ...prev };
+                    delete next[item.noticeId];
+                    return next;
+                  });
+                  toggleNotice(item.noticeId);
+                }}
               />
             ))}
 

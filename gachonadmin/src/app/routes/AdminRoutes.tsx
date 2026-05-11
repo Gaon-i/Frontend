@@ -4,6 +4,7 @@ import AdminComplaints from "../pages/AdminComplaints";
 // import AdminNotices from "./pages/AdminNotices";
 import AdminStudents from "../pages/AdminStudents";
 import AdminStatistics from "../pages/AdminStatistics";
+import AdminRegulations from "../pages/AdminRegulations";
 
 export const AdminRoutes = [
   // 루트 경로("/") 접속 시 로그인 페이지로 리다이렉트
@@ -34,5 +35,9 @@ export const AdminRoutes = [
   {
     path: "/admin/chatlogs/stats",
     Component: AdminStatistics,
+  },
+  {
+    path: "/regulations",
+    Component: AdminRegulations,
   },
 ];

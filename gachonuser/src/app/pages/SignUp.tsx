@@ -117,11 +117,8 @@ function validateForm(
 
 // ─── API 에러 파싱 유틸 ───────────────────────────────────
 
-function parseApiError(error: unknown, fallback: string): string {
-  return (
-    (error as { response?: { data?: { message?: string } } })
-      .response?.data?.message ?? fallback
-  );
+function parseApiError(error: any, fallback: string): string {
+  return error.response?.data?.message ?? fallback;
 }
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────
@@ -224,7 +221,7 @@ export default function SignUp() {
     try {
       const res = await api.post("/auth/email/send", { email: formData.email });
 
-      if (res.data.success === true) {
+      if (res.data.code === 200) {
         setIsCodeSent(true);
         setIsEmailVerified(false);
 
@@ -247,8 +244,20 @@ export default function SignUp() {
           verificationCode: res.data.message || "인증코드가 발송되었습니다.",
         }));
       }
-    } catch (error: unknown) {
-      setErrors(prev => ({ ...prev, email: parseApiError(error, "발송 실패") }));
+    } catch (error: any) {
+      const status = error.response?.status;
+
+      if (status === 409) {
+        setErrors(prev => ({
+          ...prev,
+          email: "이미 가입된 이메일입니다. 로그인 페이지로 이동해주세요.",
+        }));
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          email: parseApiError(error, "발송 실패")
+        }));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -269,8 +278,20 @@ export default function SignUp() {
         setTimeLeft(0);
         setSuccessMsgs(prev => ({ ...prev, verificationCode: "이메일 인증 성공" }));
       }
-    } catch (error: unknown) {
-      setErrors(prev => ({ ...prev, verificationCode: parseApiError(error, "인증 실패") }));
+    } catch (error: any) {
+      const status = error.response?.status;
+
+      if (status === 404) {
+        setErrors(prev => ({
+          ...prev,
+          verificationCode: "인증 발송을 먼저 해주세요.",
+        }));
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          verificationCode: parseApiError(error, "인증 실패"),
+        }));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -292,13 +313,9 @@ export default function SignUp() {
       return;
     }
 
-    const roomNo = formData.roomId.endsWith("호")
-      ? formData.roomId
-      : `${formData.roomId}호`;
-
     setIsLoading(true);
     try {
-      const selectedDorm = DORMITORY_OPTIONS.find(d => d.name === formData.dormitoryName);
+      const roomNo = formData.roomId.replace(/호$/, "").trim();
 
       const res = await api.post("/auth/signup", {
         email: formData.email,
@@ -307,15 +324,22 @@ export default function SignUp() {
         studentNo: formData.studentNo,
         phone: formData.phone,
         dormitoryName: formData.dormitoryName,
-        dormitoryId: selectedDorm?.id || 1,
-        roomId: Number(formData.roomId),
+        roomNo: `${roomNo}`,
       });
 
-      if (res.data.success === true || res.data.code === 201) {
+      if (res.data.code === 201) {
         setAlert({ show: true, message: "가온이의 가족이 되신 것을 환영합니다!", type: "success" });
       }
-    } catch (error: unknown) {
-      setAlert({ show: true, message: parseApiError(error, "회원가입에 실패했습니다."), type: "error" });
+    } catch (error: any) {
+      console.log("에러 상세:", error.response?.data);
+
+      const status = error.response?.status;
+
+      const message =
+        status === 409 ? "이미 가입된 계정입니다." :
+          status === 422 ? "입력값 형식을 확인해주세요." :
+            parseApiError(error, "회원가입에 실패했습니다.");
+      setAlert({ show: true, message, type: "error" });
     } finally {
       setIsLoading(false);
     }

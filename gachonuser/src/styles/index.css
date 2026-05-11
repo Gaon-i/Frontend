@@ -49,3 +49,5 @@ input:focus {
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
   background: #5eb9ca !important; 
 }
+
+.hide-scrollbar::-webkit-scrollbar { display: none; }

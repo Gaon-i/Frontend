@@ -88,15 +88,14 @@ export default function Login() {
 
         navigate("/");
       }
-      // } catch (error: unknown) {
+      // } catch (error: any) {
       //   const message =
-      //     (error as { response?: { data?: { message?: string } } })
-      //       .response?.data?.message
-      //     ?? "이메일 또는 비밀번호가\n올바르지 않습니다.";
+      //     error.response?.data?.message ??
+      //     "이메일 또는 비밀번호가\n올바르지 않습니다.";
+
       //   setAlertMsg(message);
 
     } catch (error: any) {
-      // axios 에러 객체 구조에 맞춰 안전하게 접근
       const serverMessage = error.response?.data?.message;
       const status = error.response?.status;
 

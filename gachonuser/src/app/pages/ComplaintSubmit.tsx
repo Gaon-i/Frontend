@@ -10,29 +10,29 @@ import api from "../api/axios";
 // ─── 타입 ─────────────────────────────────────────────────
 
 interface CategoryOption {
-  id:        string;
-  name:      string;
-  Icon:      LucideIcon;
+  id: string;
+  name: string;
+  Icon: LucideIcon;
   iconClass: string;
 }
 
 interface ImageEntry {
-  file:       File;
+  file: File;
   previewUrl: string;
 }
 
 type AlertState =
   | { show: false }
-  | { show: true; message: string };
+  | { show: true; message: string; type: "success" | "error" };
 
 // ─── 상수 ─────────────────────────────────────────────────
 
 const CATEGORY_OPTIONS: CategoryOption[] = [
-  { id: "FACILITY", name: "시설 수리", Icon: Wrench,     iconClass: "text-orange-400" },
-  { id: "RULE",     name: "생활 규칙", Icon: ScrollText, iconClass: "text-blue-400"   },
-  { id: "CLEANING", name: "청소 요청", Icon: Eraser,     iconClass: "text-green-400"  },
-  { id: "NOISE",    name: "소음 신고", Icon: Volume2,    iconClass: "text-red-400"    },
-  { id: "ETC",      name: "기타 문의", Icon: HelpCircle, iconClass: "text-purple-400" },
+  { id: "FACILITY", name: "시설 수리", Icon: Wrench, iconClass: "text-orange-400" },
+  { id: "RULE", name: "생활 규칙", Icon: ScrollText, iconClass: "text-blue-400" },
+  { id: "CLEANING", name: "청소 요청", Icon: Eraser, iconClass: "text-green-400" },
+  { id: "NOISE", name: "소음 신고", Icon: Volume2, iconClass: "text-red-400" },
+  { id: "ETC", name: "기타 문의", Icon: HelpCircle, iconClass: "text-purple-400" },
 ];
 
 const MAX_IMAGES = 5;
@@ -42,28 +42,25 @@ const LABEL_CLASS =
 
 // ─── API 에러 파싱 유틸 ───────────────────────────────────
 
-function parseApiError(error: unknown, fallback: string): string {
-  return (
-    (error as { response?: { data?: { message?: string } } })
-      .response?.data?.message ?? fallback
-  );
+function parseApiError(error: any, fallback: string): string {
+  return error.response?.data?.message ?? fallback;
 }
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────
 
 export default function ComplaintSubmit() {
-  const navigate     = useNavigate();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoggedIn] = useState(() => sessionStorage.getItem("isLoggedIn") === "true");
-  const [loading, setLoading]         = useState(false);
-  const [categoryId, setCategoryId]   = useState("FACILITY");
-  const [openSelect, setOpenSelect]   = useState(false);
-  const [title, setTitle]             = useState("");
-  const [content, setContent]         = useState("");
-  const [images, setImages]           = useState<ImageEntry[]>([]);
-  const [errors, setErrors]           = useState<{ title?: string; content?: string }>({});
-  const [alert, setAlert]             = useState<AlertState>({ show: false });
+  const [loading, setLoading] = useState(false);
+  const [categoryId, setCategoryId] = useState("FACILITY");
+  const [openSelect, setOpenSelect] = useState(false);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [images, setImages] = useState<ImageEntry[]>([]);
+  const [errors, setErrors] = useState<{ title?: string; content?: string }>({});
+  const [alert, setAlert] = useState<AlertState>({ show: false });
 
   useEffect(() => {
     if (!isLoggedIn) navigate("/auth/login");
@@ -86,7 +83,7 @@ export default function ComplaintSubmit() {
 
     setImages(prev => {
       if (prev.length + newFiles.length > MAX_IMAGES) {
-        setAlert({ show: true, message: `최대 ${MAX_IMAGES}장까지 첨부 가능합니다.` });
+        setAlert({ show: true, message: `최대 ${MAX_IMAGES}장까지 첨부 가능합니다.`, type: "error" });
         return prev;
       }
       return [
@@ -109,7 +106,7 @@ export default function ComplaintSubmit() {
   const handleSubmit = useCallback(async () => {
     // 유효성 검사
     const newErrors: typeof errors = {};
-    if (!title.trim())   newErrors.title   = "제목을 입력하세요.";
+    if (!title.trim()) newErrors.title = "제목을 입력하세요.";
     if (!content.trim()) newErrors.content = "민원 내용을 입력하세요.";
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
@@ -118,8 +115,8 @@ export default function ComplaintSubmit() {
     try {
       const formData = new FormData();
       formData.append("category", categoryId);
-      formData.append("title",    title.trim());
-      formData.append("content",  content.trim());
+      formData.append("title", title.trim());
+      formData.append("content", content.trim());
       images.forEach(img => formData.append("images", img.file));
 
       const response = await api.post("/complaints", formData, {
@@ -127,10 +124,15 @@ export default function ComplaintSubmit() {
       });
 
       if (response.data.code === 201) {
-        navigate(-1);
+        setAlert({ show: true, message: "민원이 정상적으로 접수되었습니다.", type: "success" });
       }
-    } catch (error: unknown) {
-      setAlert({ show: true, message: parseApiError(error, "민원 접수 중 오류가 발생했습니다.") });
+    } catch (error: any) {
+      const status = error.response?.status;
+      const message =
+        status === 400 ? "입력값을 확인해주세요." :
+          status === 422 ? "내용 또는 형식이 올바르지 않습니다." :
+            parseApiError(error, "민원 접수 중 오류가 발생했습니다.");
+      setAlert({ show: true, message, type: "error" });
     } finally {
       setLoading(false);
     }
@@ -153,14 +155,21 @@ export default function ComplaintSubmit() {
           >
             <div className="flex flex-col items-center text-center">
               <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-nav-active-bg-from">
-                <Check className="text-nav-accent" size={28} />
+                {alert.type === "success"
+                  ? <Check className="text-nav-accent" size={28} />
+                  : <AlertCircle className="text-red-400" size={28} />
+                }
               </div>
               <h2 className="mb-2 text-[17px] font-bold text-nav-primary">알림</h2>
               <p className="mb-6 whitespace-pre-line text-[14px] font-medium leading-relaxed text-nav-accent">
                 {alert.message}
               </p>
               <button
-                onClick={() => setAlert({ show: false })}
+                onClick={() => {
+                  setAlert({ show: false });
+                  // 성공 시 확인 버튼 누르면 이동
+                  if (alert.type === "success") navigate(-1);
+                }}
                 className="h-[50px] w-full rounded-[18px] bg-nav-accent font-bold text-white shadow-md transition-all active:scale-[0.96]"
               >
                 확인
@@ -194,9 +203,8 @@ export default function ComplaintSubmit() {
           <button
             type="button"
             onClick={() => setOpenSelect(v => !v)}
-            className={`flex h-[60px] w-full items-center justify-between rounded-[22px] border bg-white px-5 shadow-sm transition-all duration-300 ${
-              openSelect ? "border-nav-accent shadow-lg shadow-nav-accent/10" : "border-[#eef6f7]"
-            }`}
+            className={`flex h-[60px] w-full items-center justify-between rounded-[22px] border bg-white px-5 shadow-sm transition-all duration-300 ${openSelect ? "border-nav-accent shadow-lg shadow-nav-accent/10" : "border-[#eef6f7]"
+              }`}
           >
             <div className="flex items-center gap-3.5">
               <selectedCategory.Icon size={20} className={selectedCategory.iconClass} />
@@ -218,9 +226,8 @@ export default function ComplaintSubmit() {
                   >
                     <div className="flex items-center gap-4">
                       <opt.Icon size={20} className={opt.iconClass} />
-                      <span className={`text-[15px] font-bold ${
-                        categoryId === opt.id ? "text-nav-accent" : "text-nav-primary"
-                      }`}>
+                      <span className={`text-[15px] font-bold ${categoryId === opt.id ? "text-nav-accent" : "text-nav-primary"
+                        }`}>
                         {opt.name}
                       </span>
                     </div>

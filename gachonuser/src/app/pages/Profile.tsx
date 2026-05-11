@@ -49,11 +49,8 @@ const LABEL_CLASS = "mb-1 ml-1 text-[10px] font-bold uppercase tracking-wider te
 
 // ─── API 에러 파싱 유틸 ───────────────────────────────────
 
-function parseApiError(error: unknown, fallback: string): string {
-  return (
-    (error as { response?: { data?: { message?: string } } })
-      .response?.data?.message ?? fallback
-  );
+function parseApiError(error: any, fallback: string): string {
+  return error.response?.data?.message ?? fallback;
 }
 
 // ─── 유효성 검사 유틸 ─────────────────────────────────────
@@ -67,8 +64,8 @@ function validateEditForm(editedInfo: UserInfo, passwords: PasswordForm): FormEr
   else if (roomStr.length < 3) errors.roomId = "3자리 이상 입력하세요.";
 
   const purePhone = editedInfo.phone.replace(/-/g, "");
-  if (!editedInfo.phone.trim()) errors.phone = "전화번호를 입력하세요.";
-  else if (!NUM_REGEX.test(editedInfo.phone)) errors.phone = "숫자만 입력하세요.";
+  if (!purePhone) errors.phone = "전화번호를 입력하세요.";
+  else if (!NUM_REGEX.test(purePhone)) errors.phone = "숫자만 입력하세요.";
   else if (!PHONE_REGEX.test(purePhone)) errors.phone = "전화번호 형식에 맞게 입력하세요.";
 
   if (passwords.new) {
@@ -106,8 +103,14 @@ export default function Profile() {
         setUserInfo(response.data.data);
         setEditedInfo(response.data.data);
       }
-    } catch (error: unknown) {
-      console.error("정보 조회 실패:", error);
+    } catch (error: any) {
+      const status = error.response?.status;
+
+      if (status === 404) {
+        setAlert({ show: true, isConfirm: false, message: "사용자 정보를 찾을 수 없습니다." });
+      } else {
+        setAlert({ show: true, isConfirm: false, message: "정보를 불러오지 못했습니다.\n잠시 후 다시 시도해주세요." });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -152,30 +155,47 @@ export default function Profile() {
         roomId: Number(editedInfo.roomId),
       });
 
+      if (updateRes.data.code !== 200) {
+        throw new Error(updateRes.data.message);
+      }
+
+      setUserInfo(updateRes.data.data);
+
       if (passwords.current && passwords.new) {
         try {
           await api.put("/users/me/password", {
             currentPassword: passwords.current,
             newPassword: passwords.new,
           });
-        } catch (error: unknown) {
-          const msg = parseApiError(error, "현재 비밀번호가 일치하지 않습니다.");
-          setAlert({ show: true, isConfirm: false, message: `정보는 수정되었으나, 비밀번호 변경에 실패했습니다: ${msg}` });
-          setUserInfo(updateRes.data.data);
+        } catch (error: any) {
+          const status = error.response?.status;
+
+          const msg =
+            status === 404 ? "사용자 정보를 찾을 수 없습니다." :
+              status === 422 ? "비밀번호 형식을 확인해주세요." :
+                parseApiError(error, "현재 비밀번호가 일치하지 않습니다.");
+          setAlert({ show: true, isConfirm: false, message: `정보는 수정되었으나, \n비밀번호 변경에 실패했습니다: ${msg}` });
           setIsEditing(false);
           setPasswords({ current: "", new: "", confirm: "" });
           return;
         }
       }
 
-      if (updateRes.data.code === 200) {
-        setUserInfo(updateRes.data.data);
-        setIsEditing(false);
-        setPasswords({ current: "", new: "", confirm: "" });
-        setAlert({ show: true, isConfirm: false, message: "성공적으로 수정되었습니다." });
+      setIsEditing(false);
+      setPasswords({ current: "", new: "", confirm: "" });
+      setAlert({ show: true, isConfirm: false, message: "성공적으로 수정되었습니다." });
+
+    } catch (error: any) {
+      const status = error.response?.status;
+
+      if (status === 400) {
+        setAlert({ show: true, isConfirm: false, message: "잘못된 입력값입니다.\n다시 확인해주세요." });
+      } else if (status === 422) {
+        setAlert({ show: true, isConfirm: false, message: "입력값 형식을 확인해주세요." });
+      } else if (status !== 401) {
+        const message = parseApiError(error, "수정 중 오류가 발생했습니다.");
+        setAlert({ show: true, isConfirm: false, message });
       }
-    } catch (error: unknown) {
-      setAlert({ show: true, isConfirm: false, message: parseApiError(error, "수정 중 오류가 발생했습니다.") });
     } finally {
       setIsLoading(false);
     }

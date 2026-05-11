@@ -2,11 +2,11 @@ import { useState, useCallback, memo } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { AlertCircle } from "lucide-react";
 
-import iconHome       from "../icons/Home.svg";
+import iconHome from "../icons/Home.svg";
 import iconComplaints from "../icons/Complaints.svg";
-import iconChatbot    from "../icons/Chatbot.svg";
-import iconNotice     from "../icons/Notices.svg";
-import iconProfile    from "../icons/Profile.svg";
+import iconChatbot from "../icons/Chatbot.svg";
+import iconNotice from "../icons/Notices.svg";
+import iconProfile from "../icons/Profile.svg";
 
 // ─── 타입 ─────────────────────────────────────────────────
 
@@ -26,11 +26,11 @@ interface ModalState {
 // ─── 상수 ─────────────────────────────────────────────────
 
 const NAV_ITEMS: NavItem[] = [
-  { path: "/",           icon: iconHome,       label: "홈"                       },
-  { path: "/complaints", icon: iconComplaints, label: "민원",   requiresAuth: true },
-  { path: "/chatbot",    icon: iconChatbot,    label: "챗봇",   isChatbot: true    },
-  { path: "/notices",    icon: iconNotice,     label: "공지"                      },
-  { path: "/users/me",   icon: iconProfile,    label: "내정보", requiresAuth: true },
+  { path: "/", icon: iconHome, label: "홈" },
+  { path: "/complaints", icon: iconComplaints, label: "민원", requiresAuth: true },
+  { path: "/chatbot", icon: iconChatbot, label: "챗봇", isChatbot: true },
+  { path: "/notices", icon: iconNotice, label: "공지" },
+  { path: "/users/me", icon: iconProfile, label: "내정보", requiresAuth: true },
 ];
 
 const AUTH_MODAL_MESSAGE =
@@ -65,7 +65,7 @@ export default function BottomNav() {
 
   const checkAuth = useCallback(() => {
     const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
-    const hasCookie  = document.cookie.includes("JSESSIONID");
+    const hasCookie = document.cookie.includes("JSESSIONID");
     return isLoggedIn || hasCookie;
   }, []);
 
@@ -158,11 +158,10 @@ export default function BottomNav() {
                   className={`z-10 transition-all duration-200 ${isActive(item.path) ? "size-[42px] drop-shadow-md" : "size-[38px]"}`}
                 />
               </div>
-              <span className={`mt-2 text-[11px] tracking-tight transition-all ${
-                isActive(item.path)
+              <span className={`mt-2 text-[11px] tracking-tight transition-all ${isActive(item.path)
                   ? "font-black text-nav-primary"
                   : "font-bold text-nav-accent"
-              }`}>
+                }`}>
                 {item.label}
               </span>
             </Link>
@@ -181,11 +180,10 @@ export default function BottomNav() {
                 className="z-10 size-[26px] transition-all duration-300"
                 style={getIconStyle(item.path)}
               />
-              <span className={`text-[11px] transition-colors duration-300 ${
-                isActive(item.path)
+              <span className={`text-[11px] transition-colors duration-300 ${isActive(item.path)
                   ? "font-bold text-nav-primary"
                   : "text-nav-inactive group-hover:text-nav-primary"
-              }`}>
+                }`}>
                 {item.label}
               </span>
             </Link>

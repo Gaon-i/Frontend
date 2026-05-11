@@ -1,0 +1,22 @@
+name: Mirror to Personal Repo
+
+on:
+  push:
+    branches:
+      - main # 팀 레포의 메인 브랜치 이름 (확인 필요)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Push to Personal Repo
+        run: |
+          # 1단계에서 만든 PAT 토큰(GH_TOKEN)을 사용합니다.
+          # 아래 URL에서 '본인계정명'과 '개인레포이름'을 실제 GAONI배포 깃허브 주소로 바꾸세요.
+          git remote add destination https://${{ secrets.GH_TOKEN }}@github.com/Lee-Junseung/Frontend.git
+          git push -f destination main

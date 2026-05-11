@@ -9,9 +9,9 @@ import api from "../api/axios";
 
 // ─── 상수 ─────────────────────────────────────────────────
 
-const EMAIL_REGEX    = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX    = /^010\d{8}$/;
-const NUM_REGEX      = /^\d+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^010\d{8}$/;
+const NUM_REGEX = /^\d+$/;
 const PASSWORD_REGEX = /^(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
 
 // ─── 타입 ─────────────────────────────────────────────────
@@ -20,18 +20,18 @@ type Step = "verify" | "reset";
 
 interface VerifyForm {
   studentId: string;
-  name:      string;
-  email:     string;
-  phone:     string;
+  name: string;
+  email: string;
+  phone: string;
 }
 
 interface ResetForm {
-  newPassword:     string;
+  newPassword: string;
   confirmPassword: string;
 }
 
 type VerifyErrors = Partial<Record<keyof VerifyForm, string>>;
-type ResetErrors  = Partial<Record<keyof ResetForm,  string>>;
+type ResetErrors = Partial<Record<keyof ResetForm, string>>;
 
 type AlertState =
   | { show: false }
@@ -91,11 +91,8 @@ function validateReset(form: ResetForm, isSubmitted: boolean): ResetErrors {
 
 // ─── API 에러 파싱 유틸 ───────────────────────────────────
 
-function parseApiError(error: unknown, fallback: string): string {
-  return (
-    (error as { response?: { data?: { message?: string } } })
-      .response?.data?.message ?? fallback
-  );
+function parseApiError(error: any, fallback: string): string {
+  return error.response?.data?.message ?? fallback;
 }
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────
@@ -103,10 +100,10 @@ function parseApiError(error: unknown, fallback: string): string {
 export default function FindPassword() {
   const navigate = useNavigate();
 
-  const [step, setStep]               = useState<Step>("verify");
-  const [isLoading, setIsLoading]     = useState(false);
+  const [step, setStep] = useState<Step>("verify");
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [alert, setAlert]             = useState<AlertState>({ show: false });
+  const [alert, setAlert] = useState<AlertState>({ show: false });
 
   const [verifyForm, setVerifyForm] = useState<VerifyForm>({
     studentId: "", name: "", email: "", phone: "",
@@ -116,25 +113,25 @@ export default function FindPassword() {
   });
 
   const [verifyErrors, setVerifyErrors] = useState<VerifyErrors>({});
-  const [resetErrors,  setResetErrors]  = useState<ResetErrors>({});
+  const [resetErrors, setResetErrors] = useState<ResetErrors>({});
 
   // ── Refs (Rules of Hooks 준수: 객체 리터럴 밖에서 개별 선언) ──
-  const refStudentId      = useRef<HTMLDivElement>(null);
-  const refName           = useRef<HTMLDivElement>(null);
-  const refEmail          = useRef<HTMLDivElement>(null);
-  const refPhone          = useRef<HTMLDivElement>(null);
-  const refNewPassword    = useRef<HTMLDivElement>(null);
+  const refStudentId = useRef<HTMLDivElement>(null);
+  const refName = useRef<HTMLDivElement>(null);
+  const refEmail = useRef<HTMLDivElement>(null);
+  const refPhone = useRef<HTMLDivElement>(null);
+  const refNewPassword = useRef<HTMLDivElement>(null);
   const refConfirmPassword = useRef<HTMLDivElement>(null);
 
   const verifyRefs = {
     studentId: refStudentId,
-    name:      refName,
-    email:     refEmail,
-    phone:     refPhone,
+    name: refName,
+    email: refEmail,
+    phone: refPhone,
   } as const;
 
   const resetRefs = {
-    newPassword:     refNewPassword,
+    newPassword: refNewPassword,
     confirmPassword: refConfirmPassword,
   } as const;
 
@@ -198,9 +195,9 @@ export default function FindPassword() {
         "/auth/password/identity",
         {
           studentNo: verifyForm.studentId,
-          name:      verifyForm.name,
-          email:     verifyForm.email,
-          phone:     verifyForm.phone.replace(/-/g, ""),
+          name: verifyForm.name,
+          email: verifyForm.email,
+          phone: verifyForm.phone.replace(/-/g, ""),
         },
         { withCredentials: true }
       );
@@ -210,12 +207,14 @@ export default function FindPassword() {
         setIsSubmitted(false);
         setVerifyForm({ studentId: "", name: "", email: "", phone: "" });
       }
-    } catch (error: unknown) {
-      setAlert({
-        show: true,
-        message: parseApiError(error, "정보가 일치하지 않습니다."),
-        type: "error",
-      });
+    } catch (error: any) {
+      const status = error.response?.status;
+
+      const message =
+        status === 404 ? "일치하는 사용자 정보가 없습니다." :
+          status === 422 ? "입력값 형식을 확인해주세요." :
+            parseApiError(error, "정보가 일치하지 않습니다.");
+      setAlert({ show: true, message, type: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -247,12 +246,27 @@ export default function FindPassword() {
           type: "success",
         });
       }
-    } catch (error: unknown) {
-      setAlert({
-        show: true,
-        message: parseApiError(error, "비밀번호 재설정에 실패했습니다."),
-        type: "error",
-      });
+    } catch (error: any) {
+      const status = error.response?.status;
+      const serverMessage = error.response?.data?.message;
+
+      if (status === 401) {
+        setAlert({
+          show: true,
+          message: "본인 확인을 먼저 진행해주세요.",
+          type: "error",
+        });
+        // 본인 확인 세션 만료 > verify 단계로 복귀
+        setStep("verify");
+        setIsSubmitted(false);
+        setResetForm({ newPassword: "", confirmPassword: "" });
+      } else {
+        const message =
+          status === 404 ? "사용자 정보를 찾을 수 없습니다." :
+            status === 422 ? "입력값 형식을 확인해주세요." :
+              serverMessage || "비밀번호 재설정에 실패했습니다.";
+        setAlert({ show: true, message, type: "error" });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -285,8 +299,8 @@ export default function FindPassword() {
           >
             <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-2xl bg-nav-active-bg-from">
               {alert.type === "success"
-                ? <CheckCircle className="text-nav-accent"  size={32} />
-                : <AlertCircle className="text-red-400"     size={32} />
+                ? <CheckCircle className="text-nav-accent" size={32} />
+                : <AlertCircle className="text-red-400" size={32} />
               }
             </div>
             <h2 className="mb-2 text-[19px] font-bold text-nav-primary">
@@ -332,14 +346,14 @@ export default function FindPassword() {
           >
             {step === "verify" ? (
               <>
-                <InputField label="학번"     name="studentId" type="text"  value={verifyForm.studentId} onChange={handleVerifyChange} placeholder="학번을 입력하세요"     error={verifyErrors.studentId} icon={User}  inputRef={refStudentId} />
-                <InputField label="이름"     name="name"      type="text"  value={verifyForm.name}      onChange={handleVerifyChange} placeholder="이름을 입력하세요"     error={verifyErrors.name}      icon={User}  inputRef={refName} />
-                <InputField label="이메일"   name="email"     type="email" value={verifyForm.email}     onChange={handleVerifyChange} placeholder="이메일을 입력하세요"   error={verifyErrors.email}     icon={Mail}  inputRef={refEmail} />
-                <InputField label="전화번호" name="phone"     type="tel"   value={verifyForm.phone}     onChange={handleVerifyChange} placeholder="전화번호를 입력하세요" error={verifyErrors.phone}     icon={Phone} inputRef={refPhone} />
+                <InputField label="학번" name="studentId" type="text" value={verifyForm.studentId} onChange={handleVerifyChange} placeholder="학번을 입력하세요" error={verifyErrors.studentId} icon={User} inputRef={refStudentId} />
+                <InputField label="이름" name="name" type="text" value={verifyForm.name} onChange={handleVerifyChange} placeholder="이름을 입력하세요" error={verifyErrors.name} icon={User} inputRef={refName} />
+                <InputField label="이메일" name="email" type="email" value={verifyForm.email} onChange={handleVerifyChange} placeholder="이메일을 입력하세요" error={verifyErrors.email} icon={Mail} inputRef={refEmail} />
+                <InputField label="전화번호" name="phone" type="tel" value={verifyForm.phone} onChange={handleVerifyChange} placeholder="전화번호를 입력하세요" error={verifyErrors.phone} icon={Phone} inputRef={refPhone} />
               </>
             ) : (
               <>
-                <InputField label="새 비밀번호"   name="newPassword"     type="password" value={resetForm.newPassword}     onChange={handleResetChange} placeholder="새 비밀번호를 입력하세요"      error={resetErrors.newPassword}     icon={Lock} inputRef={refNewPassword} />
+                <InputField label="새 비밀번호" name="newPassword" type="password" value={resetForm.newPassword} onChange={handleResetChange} placeholder="새 비밀번호를 입력하세요" error={resetErrors.newPassword} icon={Lock} inputRef={refNewPassword} />
                 <InputField label="비밀번호 확인" name="confirmPassword" type="password" value={resetForm.confirmPassword} onChange={handleResetChange} placeholder="새 비밀번호를 다시 입력하세요" error={resetErrors.confirmPassword} icon={Lock} inputRef={refConfirmPassword} />
               </>
             )}
@@ -365,15 +379,15 @@ export default function FindPassword() {
 // ─── InputField 서브 컴포넌트 ─────────────────────────────
 
 interface InputFieldProps {
-  label:       string;
-  name:        string;
-  type?:       string;
-  value:       string;
-  onChange:    (e: React.ChangeEvent<HTMLInputElement>) => void;
+  label: string;
+  name: string;
+  type?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder: string;
-  error?:      string;
-  icon:        LucideIcon;
-  inputRef:    React.RefObject<HTMLDivElement | null>;
+  error?: string;
+  icon: LucideIcon;
+  inputRef: React.RefObject<HTMLDivElement | null>;
 }
 
 function InputField({
@@ -396,9 +410,8 @@ function InputField({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className={`h-[54px] w-full rounded-[18px] border-2 bg-white pl-11 pr-4 text-[15px] font-bold text-nav-primary shadow-sm transition-all focus:outline-none focus:border-nav-accent ${
-            error ? "border-red-300" : "border-white"
-          }`}
+          className={`h-[54px] w-full rounded-[18px] border-2 bg-white pl-11 pr-4 text-[15px] font-bold text-nav-primary shadow-sm transition-all focus:outline-none focus:border-nav-accent ${error ? "border-red-300" : "border-white"
+            }`}
         />
       </div>
       <div className="ml-1 mt-1 h-[18px]">

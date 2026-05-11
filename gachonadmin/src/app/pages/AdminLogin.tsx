@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
-import { Lock, AlertCircle, Loader2, LayoutDashboard, Database, Activity, LucideIcon } from "lucide-react";
+import {
+  Lock, AlertCircle, Loader2,
+  LayoutDashboard, Database, Activity,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import iconLogo from "../icons/GAONI.svg";
 import api from "../api/axios";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── 타입 ─────────────────────────────────────────────────
 
 interface LoginForm {
   loginId: string;
@@ -28,7 +32,7 @@ interface FeatureItem {
   title: string;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── 상수 ─────────────────────────────────────────────────
 
 const FEATURE_ITEMS: FeatureItem[] = [
   { icon: Activity, title: "실시간 대응" },
@@ -49,17 +53,19 @@ const SESSION_KEYS = {
   userRole: "userRole",
 } as const;
 
-// ─── Hooks ────────────────────────────────────────────────────────────────────
+const LABEL_CLASS =
+  "mb-1.5 ml-1 text-[10px] font-bold uppercase tracking-wider text-nav-inactive";
 
-function useLoginForm() {
+// ─── 커스텀 훅 ─────────────────────────────────────────────
+
+// alert 상태는 컴포넌트에서 관리, 훅은 로직만 담당
+function useLoginForm(onError: (msg: string) => void) {
   const navigate = useNavigate();
 
   const [form, setForm] = useState<LoginForm>({ loginId: "", password: "" });
   const [errors, setErrors] = useState<LoginFormErrors>({ loginId: "", password: "" });
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showAlert, setShowAlert] = useState(false);
-  const [alertMsg, setAlertMsg] = useState("");
 
   // 제출 이후부터 실시간 유효성 검사
   useEffect(() => {
@@ -70,12 +76,10 @@ function useLoginForm() {
     });
   }, [form, isSubmitted]);
 
-  const handleChange = useCallback(
-    (field: keyof LoginForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((prev) => ({ ...prev, [field]: e.target.value }));
-    },
-    []
-  );
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  }, []);
 
   const saveSession = useCallback((userData: AdminUserData) => {
     sessionStorage.setItem(SESSION_KEYS.isLoggedIn, "true");
@@ -85,82 +89,78 @@ function useLoginForm() {
     sessionStorage.setItem(SESSION_KEYS.userRole, userData.adminRole);
   }, []);
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      setIsSubmitted(true);
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitted(true);
 
-      if (!form.loginId.trim() || !form.password.trim()) return;
+    if (!form.loginId.trim() || !form.password.trim()) return;
 
-      setIsLoading(true);
-      try {
-        const { data } = await api.post<{
-          code: number;
-          data: AdminUserData;
-          message: string;
-        }>("/admin/auth/login", {
-          loginId: form.loginId,
-          password: form.password,
-        });
+    setIsLoading(true);
+    try {
+      const { data } = await api.post<{
+        code: number;
+        data: AdminUserData;
+        message: string;
+      }>("/admin/auth/login", {
+        loginId: form.loginId,
+        password: form.password,
+      });
 
-        if (data.code === 200) {
-          saveSession(data.data);
-          navigate("/admin/complaints");
-        }
-      } catch (error: any) {
-        const status: number = error.response?.status;
-        const serverMsg: string = error.response?.data?.message;
-        setAlertMsg(serverMsg || ERROR_MESSAGES[status] || "서버 통신 중 오류가 발생했습니다.");
-        setShowAlert(true);
-      } finally {
-        setIsLoading(false);
+      if (data.code === 200) {
+        saveSession(data.data);
+        navigate("/admin/complaints");
       }
-    },
-    [form, navigate, saveSession]
-  );
+    } catch (error: any) {
+      const status = error.response?.status ?? 0;
+      const message = error.response?.data?.message;
 
-  return { form, errors, isLoading, showAlert, alertMsg, setShowAlert, handleChange, handleSubmit };
+      onError(message ?? ERROR_MESSAGES[status] ?? "서버 통신 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [form, navigate, saveSession, onError]);
+
+  return { form, errors, isLoading, handleChange, handleSubmit };
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── 메인 컴포넌트 ─────────────────────────────────────────
 
 export default function AdminLogin() {
-  const {
-    form, errors, isLoading,
-    showAlert, alertMsg, setShowAlert,
-    handleChange, handleSubmit,
-  } = useLoginForm();
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
+
+  const { form, errors, isLoading, handleChange, handleSubmit } =
+    useLoginForm(msg => setAlertMsg(msg));
 
   return (
-    <div className="min-h-screen w-full bg-[#f8fafc] flex items-center justify-center p-4 sm:p-6 lg:p-12 antialiased font-sans relative overflow-auto">
+    <div className="relative flex min-h-screen w-full overflow-auto bg-[#f8fafc] p-4 font-sans antialiased sm:p-6 lg:items-center lg:justify-center lg:p-12">
 
-      {/* ── Alert Modal ───────────────────────────────────────────────────── */}
-      {showAlert && (
+      {/* ── 알림 모달 ── */}
+      {alertMsg && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="alert-title"
           className="fixed inset-0 z-[100] flex items-center justify-center px-8"
+          onClick={() => setAlertMsg(null)}
         >
+          <div className="absolute inset-0 bg-nav-primary/20 backdrop-blur-[3px]" aria-hidden="true" />
           <div
-            className="absolute inset-0 bg-[#054a57]/20 backdrop-blur-[3px]"
-            onClick={() => setShowAlert(false)}
-            aria-hidden="true"
-          />
-          <div className="relative bg-white w-full max-w-[320px] rounded-[28px] shadow-2xl p-7 animate-in fade-in zoom-in duration-200">
+            className="relative w-full max-w-[320px] animate-in fade-in zoom-in duration-200 rounded-[28px] bg-white p-7 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="flex flex-col items-center text-center">
-              <div className="size-[56px] bg-[#f0f9ff] rounded-full flex items-center justify-center mb-4">
-                <AlertCircle className="text-[#5eb9ca]" size={28} aria-hidden="true" />
+              <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-nav-active-bg-from">
+                <AlertCircle className="text-nav-accent" size={28} aria-hidden="true" />
               </div>
-              <h2 id="alert-title" className="text-[17px] font-bold text-[#054a57] mb-2">
+              <h2 id="alert-title" className="mb-2 text-[17px] font-bold text-nav-primary">
                 로그인 실패
               </h2>
-              <p className="text-[14px] font-medium text-[#7aaeb7] leading-relaxed mb-6 whitespace-pre-wrap">
+              <p className="mb-6 whitespace-pre-wrap text-[14px] font-medium leading-relaxed text-nav-accent">
                 {alertMsg}
               </p>
               <button
-                onClick={() => setShowAlert(false)}
-                className="w-full h-[50px] bg-[#5eb9ca] text-white font-bold rounded-[18px] active:scale-[0.96] shadow-md"
+                onClick={() => setAlertMsg(null)}
+                className="h-[50px] w-full rounded-[18px] bg-nav-accent font-bold text-white shadow-md transition-all active:scale-[0.96]"
               >
                 확인
               </button>
@@ -169,87 +169,81 @@ export default function AdminLogin() {
         </div>
       )}
 
-      {/* ── Main Card ─────────────────────────────────────────────────────── */}
-      <div className="relative w-full max-w-[1000px] min-h-[600px] grid lg:grid-cols-[1.1fr_1fr] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_40px_100px_-20px_rgba(5,74,87,0.12)] border border-white/50 overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700 my-4 sm:my-auto isolate">
+      {/* ── 메인 카드 ── */}
+      <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 isolate my-4 grid w-full max-w-[1000px] overflow-hidden rounded-[32px] border border-white/50 bg-white shadow-[0_40px_100px_-20px_rgba(5,74,87,0.12)] sm:my-auto sm:rounded-[40px] lg:min-h-[600px] lg:grid-cols-[1.1fr_1fr]">
 
-        {/* ── Left Section ──────────────────────────────────────────────── */}
-        <div className="hidden lg:flex flex-col justify-between p-12 relative overflow-hidden text-white bg-gradient-to-br from-[#083344] via-[#0e7490] to-[#155e75]">
-          <div className="absolute top-[-10%] right-[-10%] size-[500px] bg-[#22d3ee]/10 rounded-full blur-[120px]" aria-hidden="true" />
-          <div className="absolute bottom-[-5%] left-[-5%] size-[400px] bg-black/20 rounded-full blur-[100px]" aria-hidden="true" />
+        {/* ── 좌측: 브랜드 섹션 ── */}
+        <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-[#083344] via-[#0e7490] to-[#155e75] p-12 text-white lg:flex">
+          <div className="absolute right-[-10%] top-[-10%] size-[500px] rounded-full bg-[#22d3ee]/10 blur-[120px]" aria-hidden="true" />
+          <div className="absolute bottom-[-5%] left-[-5%] size-[400px] rounded-full bg-black/20 blur-[100px]" aria-hidden="true" />
 
           <div className="relative z-10">
-            <div className="flex items-center gap-4 mb-10">
-              <div className="flex items-center justify-center">
-                <img
-                  src={iconLogo}
-                  alt="가온이 로고"
-                  className="size-[144px] brightness-0 invert object-contain drop-shadow-sm -m-10"
-                />
-              </div>
+            <div className="mb-10 flex items-center gap-4">
+              <img
+                src={iconLogo}
+                alt="가온이 로고"
+                className="-m-10 size-[144px] object-contain brightness-0 drop-shadow-sm invert"
+              />
               <span className="text-3xl font-extrabold tracking-normal">GAONI</span>
             </div>
-            <h1 className="text-[40px] font-black mb-3 tracking-tight leading-[1.1]">
+            <h1 className="mb-3 text-[40px] font-black leading-[1.1] tracking-tight">
               Gachon<br />
               <span className="text-white/80">Dormitory</span><br />
               System
             </h1>
-            <p className="text-white/70 text-sm font-medium leading-relaxed">
+            <p className="text-sm font-medium leading-relaxed text-white/70">
               가천대학교 학생생활관 통합 관리자 포털입니다.
             </p>
           </div>
 
-          <ul className="relative z-10 space-y-5 mt-8" aria-label="주요 기능">
+          <ul className="relative z-10 mt-8 space-y-5" aria-label="주요 기능">
             {FEATURE_ITEMS.map(({ icon: Icon, title }) => (
               <li key={title} className="flex items-center gap-4">
-                <div className="size-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/10 text-white">
+                <div className="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white">
                   <Icon size={18} aria-hidden="true" />
                 </div>
-                <span className="font-bold text-white text-xs">{title}</span>
+                <span className="text-xs font-bold text-white">{title}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        {/* ── Right Section: Login Form ──────────────────────────────────── */}
-        <div className="pt-10 px-10 pb-6 flex flex-col justify-center bg-white h-full">
+        {/* ── 우측: 로그인 폼 ── */}
+        <div className="flex h-full flex-col justify-center bg-white px-10 pb-6 pt-10">
           <div className="mb-8 shrink-0">
-            <span className="text-[#5eb9ca] font-black text-[10px] tracking-widest uppercase mb-1.5 block">
+            <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-nav-accent">
               GAONI ADMIN PAGES
             </span>
-            <h2 className="text-[26px] font-black text-[#0f172a] mb-2">관리자 로그인</h2>
-            <div className="w-10 h-1.5 bg-[#5eb9ca] rounded-full" aria-hidden="true" />
+            <h2 className="mb-2 text-[26px] font-black text-[#0f172a]">관리자 로그인</h2>
+            <div className="h-1.5 w-10 rounded-full bg-nav-accent" aria-hidden="true" />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
 
             {/* 아이디 */}
             <div className="flex flex-col">
-              <label
-                htmlFor="loginId"
-                className="text-[10px] font-bold text-[#829496] ml-1 mb-1.5 uppercase tracking-wider"
-              >
-                아이디
-              </label>
-              <div className="relative group">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10" aria-hidden="true">
-                  <Lock size={18} className="text-[#adc0c2] group-focus-within:text-[#5eb9ca] transition-colors" />
+              <label htmlFor="loginId" className={LABEL_CLASS}>아이디</label>
+              <div className="group relative">
+                <div className="absolute left-4 top-1/2 z-10 -translate-y-1/2" aria-hidden="true">
+                  <Lock size={18} className="text-nav-inactive transition-colors group-focus-within:text-nav-accent" />
                 </div>
                 <input
                   id="loginId"
+                  name="loginId"
                   type="text"
                   value={form.loginId}
-                  onChange={handleChange("loginId")}
+                  onChange={handleChange}
                   placeholder="아이디를 입력하세요"
                   autoComplete="username"
                   aria-invalid={!!errors.loginId}
                   aria-describedby={errors.loginId ? "loginId-error" : undefined}
-                  className={`w-full bg-[#f8fafc] border ${errors.loginId ? "border-red-400" : "border-[#eef6f7]"
-                    } rounded-[16px] pl-12 pr-4 h-[56px] text-[14px] font-bold text-[#054a57] focus:outline-none focus:border-[#5eb9ca] transition-all`}
+                  className={`h-[56px] w-full rounded-[16px] border bg-[#f8fafc] pl-12 pr-4 text-[14px] font-bold text-nav-primary transition-all focus:border-nav-accent focus:outline-none ${errors.loginId ? "border-red-400" : "border-[#eef6f7]"
+                    }`}
                 />
               </div>
               <div className="h-[18px]">
                 {errors.loginId && (
-                  <p id="loginId-error" role="alert" className="text-[10px] text-red-500 font-bold mt-1 ml-1 animate-in fade-in">
+                  <p id="loginId-error" role="alert" className="ml-1 mt-1 animate-in fade-in text-[10px] font-bold text-red-500">
                     * {errors.loginId}
                   </p>
                 )}
@@ -258,49 +252,45 @@ export default function AdminLogin() {
 
             {/* 비밀번호 */}
             <div className="flex flex-col">
-              <label
-                htmlFor="password"
-                className="text-[10px] font-bold text-[#829496] ml-1 mb-1.5 uppercase tracking-wider"
-              >
-                비밀번호
-              </label>
-              <div className="relative group">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10" aria-hidden="true">
-                  <Lock size={18} className="text-[#adc0c2] group-focus-within:text-[#5eb9ca] transition-colors" />
+              <label htmlFor="password" className={LABEL_CLASS}>비밀번호</label>
+              <div className="group relative">
+                <div className="absolute left-4 top-1/2 z-10 -translate-y-1/2" aria-hidden="true">
+                  <Lock size={18} className="text-nav-inactive transition-colors group-focus-within:text-nav-accent" />
                 </div>
                 <input
                   id="password"
+                  name="password"
                   type="password"
                   value={form.password}
-                  onChange={handleChange("password")}
+                  onChange={handleChange}
                   placeholder="비밀번호를 입력하세요"
                   autoComplete="current-password"
                   aria-invalid={!!errors.password}
                   aria-describedby={errors.password ? "password-error" : undefined}
-                  className={`w-full bg-[#f8fafc] border ${errors.password ? "border-red-400" : "border-[#eef6f7]"
-                    } rounded-[16px] pl-12 pr-4 h-[56px] text-[14px] font-bold text-[#054a57] focus:outline-none focus:border-[#5eb9ca] transition-all`}
+                  className={`h-[56px] w-full rounded-[16px] border bg-[#f8fafc] pl-12 pr-4 text-[14px] font-bold text-nav-primary transition-all focus:border-nav-accent focus:outline-none ${errors.password ? "border-red-400" : "border-[#eef6f7]"
+                    }`}
                 />
               </div>
               <div className="h-[18px]">
                 {errors.password && (
-                  <p id="password-error" role="alert" className="text-[10px] text-red-500 font-bold mt-1 ml-1 animate-in fade-in">
+                  <p id="password-error" role="alert" className="ml-1 mt-1 animate-in fade-in text-[10px] font-bold text-red-500">
                     * {errors.password}
                   </p>
                 )}
               </div>
             </div>
 
-            {/* 로그인 버튼 */}
+            {/* 제출 버튼 */}
             <div className="pt-2">
               <button
                 type="submit"
                 disabled={isLoading}
                 aria-busy={isLoading}
-                className="w-full h-[56px] bg-[#5eb9ca] hover:bg-[#4ba8b8] disabled:bg-gray-300 rounded-[16px] text-white font-black text-[15px] active:scale-[0.98] transition-all shadow-lg shadow-[#5eb9ca]/20 flex items-center justify-center gap-2"
+                className="flex h-[56px] w-full items-center justify-center gap-2 rounded-[16px] bg-nav-accent font-black text-[15px] text-white shadow-lg shadow-nav-accent/20 transition-all hover:bg-nav-accent/90 active:scale-[0.98] disabled:bg-gray-300"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="animate-spin size-5" aria-hidden="true" />
+                    <Loader2 className="size-5 animate-spin" aria-hidden="true" />
                     <span>접속 중...</span>
                   </>
                 ) : (
@@ -310,17 +300,17 @@ export default function AdminLogin() {
             </div>
           </form>
 
-          {/* 하단 버튼 영역 */}
-          <div className="mt-6 flex flex-col items-center shrink-0">
+          {/* 하단 영역 */}
+          <div className="mt-6 flex shrink-0 flex-col items-center">
             <a
               href="https://gaoni-user.vercel.app/api/v1/auth/login"
-              rel="noopener noreferrer" // 보안 강화
-              className="w-full h-[52px] bg-white border-2 border-[#5eb9ca]/20 rounded-[16px] text-[#5eb9ca] font-extrabold text-[13px] hover:bg-[#5eb9ca]/5 active:bg-[#5eb9ca]/10 active:scale-[0.98] transition-all flex items-center justify-center"
+              rel="noopener noreferrer"
+              className="flex h-[52px] w-full items-center justify-center rounded-[16px] border-2 border-nav-accent/20 bg-white text-[13px] font-extrabold text-nav-accent transition-all hover:bg-nav-accent/5 active:scale-[0.98] active:bg-nav-accent/10"
             >
               일반 사용자 화면으로 이동
             </a>
-            <div className="mt-6 pt-4 border-t border-slate-50 w-full text-center">
-              <p className="text-[9px] font-bold text-[#cbd5e1] uppercase tracking-tighter">
+            <div className="mt-6 w-full border-t border-slate-50 pt-4 text-center">
+              <p className="text-[9px] font-bold uppercase tracking-tighter text-[#cbd5e1]">
                 Infrastructure by Gachon University
               </p>
             </div>
