@@ -7,6 +7,8 @@ import iconTogoChatbot from "../icons/TogoChatbot.svg";
 
 // BottomNav(90px) + 챗봇버튼 영역(58px + 상하 여백) 합산
 const BOTTOM_OFFSET = "pb-[220px]";
+const CHATBOT_BTN_BOTTOM = "bottom-[130px]";
+
 
 // ─── 서브 컴포넌트 ─────────────────────────────────────────
 
@@ -67,7 +69,7 @@ export default function Home() {
       </div>
 
       {/* ── 챗봇 바로가기 버튼 ── */}
-      <div className="fixed bottom-[130px] left-1/2 z-30 w-full max-w-[448px] -translate-x-1/2 px-6">
+      <div className={`fixed ${CHATBOT_BTN_BOTTOM} left-1/2 z-30 w-full max-w-[448px] -translate-x-1/2 px-6`}>
         <Link
           to="/chatbot"
           className="flex h-[58px] w-full items-center justify-center gap-2.5 rounded-[18px] bg-nav-accent shadow-md transition-all active:scale-95"

@@ -178,17 +178,17 @@ export default function AdminLogin() {
           <div className="absolute bottom-[-5%] left-[-5%] size-[400px] rounded-full bg-black/20 blur-[100px]" aria-hidden="true" />
 
           <div className="relative z-10">
-            <div className="mb-10 flex items-center gap-4">
+            <div className="mb-10 flex items-center gap-3">
               <img
                 src={iconLogo}
                 alt="가온이 로고"
-                className="-m-10 size-[144px] object-contain brightness-0 drop-shadow-sm invert"
+                className="size-[72px] object-contain brightness-0 drop-shadow-sm invert"
               />
-              <span className="text-3xl font-extrabold tracking-normal">GAONI</span>
+              <span className="text-4xl font-black tracking-normal">GAONI</span>
             </div>
-            <h1 className="mb-3 text-[40px] font-black leading-[1.1] tracking-tight">
+            <h1 className="mb-3 text-[48px] font-black leading-[1.1] tracking-tight">
               Gachon<br />
-              <span className="text-white/80">Dormitory</span><br />
+              <span className="text-white/70">Dormitory</span><br />
               System
             </h1>
             <p className="text-sm font-medium leading-relaxed text-white/70">

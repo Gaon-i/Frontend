@@ -116,8 +116,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 onClick={() => navigate(path)}
                 aria-current={isActive(path) ? "page" : undefined}
                 className={`flex w-full items-center gap-3 rounded-[12px] px-4 py-3 transition-all group ${isActive(path)
-                    ? "bg-nav-accent text-white shadow-lg shadow-nav-accent/30"
-                    : "text-nav-inactive hover:bg-[#f0f9ff] hover:text-nav-accent"
+                  ? "bg-nav-accent text-white shadow-lg shadow-nav-accent/30"
+                  : "text-nav-inactive hover:bg-[#f0f9ff] hover:text-nav-accent"
                   }`}
               >
                 <span className="rounded-md p-1">
@@ -192,8 +192,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   onClick={() => handleMobileNavigate(path)}
                   aria-current={isActive(path) ? "page" : undefined}
                   className={`flex w-full items-center gap-4 rounded-[22px] px-5 py-4 transition-all group ${isActive(path)
-                      ? "bg-nav-accent text-white"
-                      : "text-nav-inactive hover:bg-[#f0f9ff]"
+                    ? "bg-nav-accent text-white"
+                    : "text-nav-inactive hover:bg-[#f0f9ff]"
                     }`}
                 >
                   <span className={`rounded-[14px] p-2.5 transition-all ${isActive(path) ? "bg-transparent" : "bg-[#f0f9ff] group-hover:bg-transparent"
