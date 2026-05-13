@@ -23,6 +23,18 @@ input:focus {
   outline: none !important;
 }
 
+/* 스크롤바 숨기기 */
+
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, Opera */
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none !important;  /* IE and Edge */
+    scrollbar-width: none !important;  /* Firefox */
+  }
+}
+
 /* Admin User Table 전역 스크롤바 스타일 */
 
 /* 1. 테이블 스크롤바 전체 설정 */
@@ -48,16 +60,4 @@ input:focus {
 /* 4. 마우스 올렸을 때 민트색으로 변경 */
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
   background: #5eb9ca !important; 
-}
-
-/* 스크롤바는 숨기되 스크롤 기능은 유지하는 클래스 정의 */
-@layer components {
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
 }

@@ -397,8 +397,8 @@ function ComplaintDetailModal({
                     onClick={() => onStatusChange(value)}
                     aria-pressed={targetStatus === value}
                     className={`rounded-xl border-2 py-2.5 text-xs font-bold transition-all ${targetStatus === value
-                        ? "border-nav-accent bg-nav-accent text-white shadow-md shadow-nav-accent/20"
-                        : "border-[#eef5f6] bg-white text-nav-inactive hover:border-nav-accent/30"
+                      ? "border-nav-accent bg-nav-accent text-white shadow-md shadow-nav-accent/20"
+                      : "border-[#eef5f6] bg-white text-nav-inactive hover:border-nav-accent/30"
                       }`}
                   >
                     {label}
@@ -473,14 +473,14 @@ export default function AdminComplaints() {
                 onClick={() => setFilterStatus(value)}
                 aria-pressed={filterStatus === value}
                 className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition-all ${filterStatus === value
-                    ? "bg-nav-accent text-white"
-                    : "border border-nav-inactive/20 bg-white text-nav-inactive hover:bg-[#f0f9ff]"
+                  ? "bg-nav-accent text-white"
+                  : "border border-nav-inactive/20 bg-white text-nav-inactive hover:bg-[#f0f9ff]"
                   }`}
               >
                 {label}
                 <span className={`rounded-md px-1.5 py-0.5 text-[11px] ${filterStatus === value
-                    ? "bg-white/20 text-white"
-                    : "bg-nav-active-bg-from text-nav-accent"
+                  ? "bg-white/20 text-white"
+                  : "bg-nav-active-bg-from text-nav-accent"
                   }`}>
                   {getCountByFilter(value)}
                 </span>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
-import { Mail, Lock, AlertCircle } from "lucide-react";
+import { Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
 import iconLogo from "../icons/GAONI.svg";
 
 // ─── 상수 ─────────────────────────────────────────────────
@@ -8,13 +8,12 @@ import iconLogo from "../icons/GAONI.svg";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX = /^(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
 
-// 실제 서비스 전환 시 API 호출로 교체
-const MOCK_ACCOUNTS = [
-  { email: "test@gachon.ac.kr", password: "1234!@#$", name: "가온이", role: "user" },
-  { email: "test2@gachon.ac.kr", password: "zxcv!@#$", name: "관리자", role: "admin" },
-] as const;
-
-const MOCK_DELAY_MS = 1000;
+const FAKE_USER = {
+  email: "test@gachon.ac.kr",
+  password: "qwer!@#$",
+  name: "테스트유저",
+  userId: "user-001",
+};
 
 // ─── 타입 ─────────────────────────────────────────────────
 
@@ -28,7 +27,7 @@ interface FormErrors {
   password: string;
 }
 
-// ─── 유효성 검사 유틸 ────────────────────────────────────
+// ─── 유효성 검사 유틸 ─────────────────────────────────────
 
 function validateEmail(email: string, isSubmitted: boolean): string {
   if (isSubmitted && !email.trim()) return "이메일을 입력하세요.";
@@ -38,7 +37,7 @@ function validateEmail(email: string, isSubmitted: boolean): string {
 
 function validatePassword(password: string, isSubmitted: boolean): string {
   if (isSubmitted && !password.trim()) return "비밀번호를 입력하세요.";
-  if (password && !PASSWORD_REGEX.test(password)) return "특수문자를 포함한 8자 이상으로 입력하세요.";
+  if (password && !PASSWORD_REGEX.test(password)) return "특수 문자를 포함한 8자 이상으로 입력하세요.";
   return "";
 }
 
@@ -51,7 +50,7 @@ export default function Login() {
   const [errors, setErrors] = useState<FormErrors>({ email: "", password: "" });
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [alertMsg, setAlertMsg] = useState<string | null>(null); // null이면 모달 닫힘
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   // ── 실시간 유효성 검사 ──
   useEffect(() => {
@@ -66,34 +65,31 @@ export default function Login() {
     setForm(prev => ({ ...prev, [name]: value }));
   }, []);
 
+  // ── 로그인 제출 ──
   const handleLogin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitted(true);
 
     if (
-      !form.email.trim() || !form.password.trim() ||
-      !EMAIL_REGEX.test(form.email) || !PASSWORD_REGEX.test(form.password)
+      !form.email.trim() || !EMAIL_REGEX.test(form.email) ||
+      !form.password.trim() || !PASSWORD_REGEX.test(form.password)
     ) return;
 
     setIsLoading(true);
 
-    // TODO: setTimeout → 실제 API 호출로 교체
-    setTimeout(() => {
-      setIsLoading(false);
+    await new Promise(res => setTimeout(res, 600)); // 로딩 효과
 
-      const account = MOCK_ACCOUNTS.find(
-        a => a.email === form.email && a.password === form.password
-      );
+    if (form.email === FAKE_USER.email && form.password === FAKE_USER.password) {
+      sessionStorage.setItem("isLoggedIn", "true");
+      sessionStorage.setItem("userName", FAKE_USER.name);
+      sessionStorage.setItem("userRole", "USER");
+      sessionStorage.setItem("userId", FAKE_USER.userId);
+      navigate("/");
+    } else {
+      setAlertMsg("이메일 또는 비밀번호가 일치하지 않습니다.");
+    }
 
-      if (account) {
-        sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("userName", account.name);
-        sessionStorage.setItem("userRole", account.role);
-        navigate(account.role === "admin" ? "/admin/complaints" : "/");
-      } else {
-        setAlertMsg("이메일 또는 비밀번호가 일치하지 않습니다.");
-      }
-    }, MOCK_DELAY_MS);
+    setIsLoading(false);
   }, [form, navigate]);
 
   return (
@@ -115,12 +111,12 @@ export default function Login() {
                 <AlertCircle className="text-nav-accent" size={28} />
               </div>
               <h2 className="mb-2 text-[17px] font-bold text-nav-primary">알림</h2>
-              <p className="mb-6 whitespace-pre-line text-[14px] font-medium leading-relaxed text-nav-accent">
+              <p className="mb-6 whitespace-pre-wrap text-[14px] font-medium leading-relaxed text-nav-accent">
                 {alertMsg}
               </p>
               <button
                 onClick={() => setAlertMsg(null)}
-                className="h-[50px] w-full rounded-[18px] bg-nav-accent font-bold text-white shadow-md active:scale-[0.96] transition-all"
+                className="h-[50px] w-full rounded-[18px] bg-nav-accent font-bold text-white shadow-md transition-all active:scale-[0.96]"
               >
                 확인
               </button>
@@ -130,18 +126,18 @@ export default function Login() {
       )}
 
       {/* ── 메인 레이아웃 ── */}
-      <div className="relative flex w-full max-w-[448px] min-h-screen flex-col items-center bg-[#f0f9ff] px-7 shadow-sm">
+      <div className="relative flex min-h-screen w-full max-w-[448px] flex-col items-center bg-[#f0f9ff] px-7 shadow-sm">
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#e0f2fe] via-[#f0f9ff] to-[#f8fafc]" />
 
         <div className="h-10 shrink-0 sm:h-16" />
 
         {/* ── 로고 ── */}
         <div className="mb-6 flex shrink-0 flex-col items-center sm:mb-8">
-          <div className="relative bg-[#5eb9ca] rounded-[12px] size-10 flex items-center justify-center shadow-sm shadow-[#5eb9ca]/20 overflow-hidden">
+          <div className="relative mb-3 flex size-10 items-center justify-center overflow-hidden rounded-[12px] bg-nav-accent shadow-sm shadow-nav-accent/20">
             <img
               src={iconLogo}
               alt="가온이 아이콘"
-              className="w-7 h-7 brightness-0 invert transition-all object-contain"
+              className="h-7 w-7 object-contain brightness-0 invert transition-all"
             />
           </div>
           <h1 className="mb-1 text-[24px] font-bold tracking-tight text-nav-primary">가온이</h1>
@@ -152,11 +148,10 @@ export default function Login() {
         <div className="mb-6 w-full animate-in fade-in slide-in-from-bottom-3 duration-700 rounded-[28px] border border-white bg-white/75 px-7 pb-5 pt-7 shadow-xl shadow-blue-900/5 backdrop-blur-md">
           <form onSubmit={handleLogin} className="w-full space-y-2.5" noValidate>
 
-            {/* 이메일 */}
             <InputField
               label="이메일"
               name="email"
-              type="text"
+              type="email"
               value={form.email}
               onChange={handleChange}
               placeholder="이메일을 입력하세요"
@@ -164,7 +159,6 @@ export default function Login() {
               icon={<Mail size={16} className="text-nav-inactive group-focus-within:text-nav-accent transition-colors" />}
             />
 
-            {/* 비밀번호 */}
             <InputField
               label="비밀번호"
               name="password"
@@ -176,14 +170,18 @@ export default function Login() {
               icon={<Lock size={16} className="text-nav-inactive group-focus-within:text-nav-accent transition-colors" />}
             />
 
-            {/* 버튼 */}
             <div className="space-y-2.5 pt-2">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="h-12 w-full rounded-[14px] bg-nav-accent font-bold text-[15px] text-white shadow-lg shadow-nav-accent/20 transition-all active:scale-[0.98] disabled:bg-gray-400"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-nav-accent font-bold text-[15px] text-white shadow-lg shadow-nav-accent/20 transition-all active:scale-[0.98] disabled:bg-gray-300"
               >
-                {isLoading ? "로그인 중..." : "로그인"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>인증 중...</span>
+                  </>
+                ) : "로그인"}
               </button>
               <button
                 type="button"
@@ -200,7 +198,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => navigate("/auth/password/identity")}
-              className="text-[12px] font-medium text-nav-inactive hover:text-nav-accent transition-colors"
+              className="text-[12px] font-medium text-nav-inactive transition-colors hover:text-nav-accent"
             >
               비밀번호 찾기
             </button>
@@ -208,7 +206,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => navigate("/auth/signup")}
-              className="text-[12px] font-medium text-nav-inactive hover:text-nav-accent transition-colors"
+              className="text-[12px] font-medium text-nav-inactive transition-colors hover:text-nav-accent"
             >
               회원가입
             </button>
@@ -218,14 +216,16 @@ export default function Login() {
         {/* ── 푸터 ── */}
         <div className="mt-auto pb-6 text-center opacity-70">
           <p className="text-[10px] font-bold text-nav-inactive">가천대학교 학생생활관</p>
-          <p className="mt-0.5 text-[8px] font-bold uppercase tracking-widest text-nav-accent-light">Version 1.0.0</p>
+          <p className="mt-0.5 text-[8px] font-bold uppercase tracking-widest text-nav-accent-light">
+            Version 1.0.0
+          </p>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── InputField 서브 컴포넌트 (외부 선언) ────────────────
+// ─── InputField 서브 컴포넌트 ─────────────────────────────
 
 interface InputFieldProps {
   label: string;

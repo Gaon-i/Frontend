@@ -302,9 +302,9 @@ export default function Chatbot() {
     if (lastBot) {
       const containerHeight = container.clientHeight;
       const msgTop = lastBot.offsetTop;
-      const msgHeight = lastBot.offsetHeight;
+      const targetScrollPos = msgTop - (containerHeight / 2) + 60;
       container.scrollTo({
-        top: msgTop - containerHeight / 2 + msgHeight / 2,
+        top: targetScrollPos,
         behavior: "smooth",
       });
     }
@@ -314,9 +314,12 @@ export default function Chatbot() {
     if (isTyping) {
       scrollToBottom();
     } else {
-      scrollToLastBotMsg();
+      const timer = setTimeout(() => {
+        scrollToLastBotMsg();
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [messages, isTyping]);
+  }, [messages, isTyping, scrollToBottom, scrollToLastBotMsg]);
 
   // ── 배경 클릭 > 피드백 닫기 ──
   const handleContainerClick = useCallback(() => {
@@ -500,7 +503,7 @@ export default function Chatbot() {
 
   return (
     <div
-      className="relative mx-auto flex h-screen w-full max-w-[448px] flex-col overflow-x-hidden bg-[#f0f9ff] shadow-2xl"
+      className="relative mx-auto flex h-screen w-full max-w-[448px] flex-col overflow-hidden bg-[#f0f9ff] shadow-2xl"
       onClick={handleContainerClick}
     >
       {/* ── 헤더 ── */}
@@ -556,47 +559,49 @@ export default function Chatbot() {
       </div>
 
       {/* ── 하단 입력 UI ── */}
-      <div className="fixed bottom-[90px] z-20 w-full max-w-[448px] border-t border-[#eef6f7] bg-white/90 pt-5 shadow-[0_-10px_20px_rgba(0,0,0,0.02)] backdrop-blur-xl">
-        <div className="relative z-10 px-6">
-          <div className="mb-3 flex items-center justify-between px-1">
-            <p className="text-[11px] font-black uppercase tracking-wider text-nav-inactive">추천 질문</p>
+      <div className="fixed bottom-0 z-20 w-full max-w-[448px] border-t border-[#eef6f7] bg-white/90 pt-5 shadow-[0_-10px_20px_rgba(0,0,0,0.02)] backdrop-blur-xl">
+        <div className="pb-[100px]">
+          <div className="relative z-10 px-6">
+            <div className="mb-3 flex items-center justify-between px-1">
+              <p className="text-[11px] font-black uppercase tracking-wider text-nav-inactive">추천 질문</p>
+              <button
+                onClick={() => setIsSuggestOpen(v => !v)}
+                className="rounded-full p-1 text-nav-inactive transition-colors hover:bg-[#f1f5f9]"
+              >
+                {isSuggestOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </button>
+            </div>
+            <div className={`grid grid-cols-2 gap-2 overflow-hidden transition-all duration-300 ${isSuggestOpen ? "mb-2 pb-1 max-h-[200px] opacity-100" : "mb-0 max-h-0 opacity-0"
+              }`}>
+              {SUGGESTED_QUESTIONS.map(q => (
+                <button
+                  key={q}
+                  onClick={() => handleSend(q)}
+                  className="min-h-[35px] w-full rounded-[18px] border border-[#eef6f7] bg-white px-3 py-2.5 shadow-sm active:scale-95"
+                >
+                  <span className="break-keep text-center text-[11.5px] font-extrabold leading-[1.3] text-nav-primary/70">
+                    {q}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="relative z-10 flex items-center gap-3 px-6 pb-5 pt-2">
+            <input
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="메시지를 입력하세요..."
+              className="flex-1 rounded-[22px] border border-transparent bg-[#f1f5f9] px-5 py-3.5 text-[14.5px] font-bold text-nav-primary outline-none transition-all focus:border-nav-accent/30 focus:bg-white"
+            />
             <button
-              onClick={() => setIsSuggestOpen(v => !v)}
-              className="rounded-full p-1 text-nav-inactive transition-colors hover:bg-[#f1f5f9]"
+              onClick={() => handleSend()}
+              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-nav-accent shadow-lg transition-all active:scale-90"
             >
-              {isSuggestOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              <img src={iconShortcut} alt="전송" className="size-5 brightness-0 invert" />
             </button>
           </div>
-          <div className={`grid grid-cols-2 gap-2 overflow-hidden transition-all duration-300 ${isSuggestOpen ? "mb-2 pb-1 max-h-[200px] opacity-100" : "mb-0 max-h-0 opacity-0"
-            }`}>
-            {SUGGESTED_QUESTIONS.map(q => (
-              <button
-                key={q}
-                onClick={() => handleSend(q)}
-                className="min-h-[35px] w-full rounded-[18px] border border-[#eef6f7] bg-white px-3 py-2.5 shadow-sm active:scale-95"
-              >
-                <span className="break-keep text-center text-[11.5px] font-extrabold leading-[1.3] text-nav-primary/70">
-                  {q}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative z-10 flex items-center gap-3 px-6 pb-5 pt-2">
-          <input
-            value={inputValue}
-            onChange={e => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="메시지를 입력하세요..."
-            className="flex-1 rounded-[22px] border border-transparent bg-[#f1f5f9] px-5 py-3.5 text-[14.5px] font-bold text-nav-primary outline-none transition-all focus:border-nav-accent/30 focus:bg-white"
-          />
-          <button
-            onClick={() => handleSend()}
-            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-nav-accent shadow-lg transition-all active:scale-90"
-          >
-            <img src={iconShortcut} alt="전송" className="size-5 brightness-0 invert" />
-          </button>
         </div>
       </div>
 

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  MessageSquare, Users, Clock, UserCheck,
-  AlertCircle, LucideIcon,
+  MessageSquare, Users, Clock, UserCheck, AlertCircle,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis,
@@ -10,54 +10,56 @@ import {
 import AdminLayout from "../components/AdminLayout";
 import api from "../api/axios";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── 타입 ─────────────────────────────────────────────────
 
 interface DailyStat {
-  date:  string;
+  date: string;
   count: number;
 }
 
 interface TopQuestion {
   question: string;
-  count:    number;
+  count: number;
 }
 
 interface StatResponse {
-  totalChats:        number;
-  memberUserCount:   number;
+  totalChats: number;
+  memberUserCount: number;
   guestSessionCount: number;
-  avgResponseTime:   number;
-  dailyStats:        DailyStat[];
-  topQuestions:      TopQuestion[];
+  avgResponseTime: number;
+  dailyStats: DailyStat[];
+  topQuestions: TopQuestion[];
 }
 
 interface SummaryCardProps {
   title: string;
   value: string;
-  icon:  LucideIcon;
+  icon: LucideIcon;
   color: string;
 }
 
 interface AlertState {
-  show:    boolean;
-  title:   string;
+  show: boolean;
+  title: string;
   message: string;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── 상수 ─────────────────────────────────────────────────
 
 const FALLBACK_STATS: StatResponse = {
-  totalChats:        0,
-  memberUserCount:   0,
+  totalChats: 0,
+  memberUserCount: 0,
   guestSessionCount: 0,
-  avgResponseTime:   0,
-  dailyStats:        [],
-  topQuestions:      [],
+  avgResponseTime: 0,
+  dailyStats: [],
+  topQuestions: [],
 };
 
-const PIE_COLORS = {
-  member: "#5eb9ca",
-  guest:  "#92a4a6",
+// 차트 내부는 CSS 변수 직접 참조 불가 → hex 상수로 분리
+const CHART_COLORS = {
+  accent: "#5eb9ca",
+  inactive: "#92a4a6",
+  grid: "#e6f4f6",
 } as const;
 
 const ERROR_MESSAGES: Record<number, string> = {
@@ -65,15 +67,15 @@ const ERROR_MESSAGES: Record<number, string> = {
   403: "통계 데이터 접근 권한이 없습니다.\n관리자 계정인지 확인해 주세요.",
 };
 
-// ─── Utils ────────────────────────────────────────────────────────────────────
+// ─── 유틸 ─────────────────────────────────────────────────
 
 function getDateRange(): { startDate: string; endDate: string } {
-  const end   = new Date();
+  const end = new Date();
   const start = new Date();
   start.setDate(end.getDate() - 30);
   return {
     startDate: start.toISOString().split("T")[0],
-    endDate:   end.toISOString().split("T")[0],
+    endDate: end.toISOString().split("T")[0],
   };
 }
 
@@ -82,7 +84,13 @@ function toPercentage(count: number, total: number): string {
   return ((count / total) * 100).toFixed(1);
 }
 
-// ─── Hooks ────────────────────────────────────────────────────────────────────
+function parseApiError(error: unknown, fallback: string): string {
+  const status = (error as { response?: { status?: number } }).response?.status ?? 0;
+  const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message;
+  return message ?? ERROR_MESSAGES[status] ?? fallback;
+}
+
+// ─── 커스텀 훅 ─────────────────────────────────────────────
 
 function useAlert() {
   const [alert, setAlert] = useState<AlertState>({ show: false, title: "", message: "" });
@@ -92,25 +100,24 @@ function useAlert() {
   }, []);
 
   const closeAlert = useCallback(() => {
-    setAlert((prev) => ({ ...prev, show: false }));
+    setAlert(prev => ({ ...prev, show: false }));
   }, []);
 
   return { alert, triggerAlert, closeAlert };
 }
 
 function useStatistics(triggerAlert: (title: string, msg: string) => void) {
-  const [stats,   setStats]   = useState<StatResponse | null>(null);
+  const [stats, setStats] = useState<StatResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
       const { startDate, endDate } = getDateRange();
-
       const { data } = await api.get<{
-        code:    number;
+        code: number;
         message: string;
-        data:    StatResponse & { dailyStats: DailyStat[] };
+        data: StatResponse & { dailyStats: DailyStat[] };
       }>("/admin/chatlogs/stats", { params: { startDate, endDate } });
 
       if (data.code === 200) {
@@ -121,44 +128,39 @@ function useStatistics(triggerAlert: (title: string, msg: string) => void) {
       } else {
         triggerAlert("데이터 오류", data.message || "통계 데이터를 불러오지 못했습니다.");
       }
-    } catch (error: any) {
-      const status: number  = error.response?.status;
-      const serverMsg: string = error.response?.data?.message;
+    } catch (error: unknown) {
+      const status = (error as { response?: { status?: number } }).response?.status;
 
+      // 401은 즉시 리디렉션
       if (status === 401) {
         window.location.href = "/admin/auth/login";
         return;
       }
 
-      triggerAlert(
-        "오류",
-        serverMsg || ERROR_MESSAGES[status] || "서버와의 통신이 원활하지 않습니다."
-      );
+      triggerAlert("오류", parseApiError(error, "서버와의 통신이 원활하지 않습니다."));
     } finally {
       setLoading(false);
     }
   }, [triggerAlert]);
 
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+  useEffect(() => { fetchStats(); }, [fetchStats]);
 
   return { stats, loading, fetchStats };
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── 서브 컴포넌트 ─────────────────────────────────────────
 
 function SummaryCard({ title, value, icon: Icon, color }: SummaryCardProps) {
   return (
-    <div className="bg-white p-4 rounded-[16px] shadow-sm flex items-center gap-3 h-full border border-white">
-      <div className={`size-12 min-w-[48px] rounded-[12px] ${color} text-white flex items-center justify-center flex-shrink-0`}>
+    <div className="flex h-full items-center gap-3 rounded-[16px] border border-white bg-white p-4 shadow-sm">
+      <div className={`flex size-12 min-w-[48px] shrink-0 items-center justify-center rounded-[12px] text-white ${color}`}>
         <Icon size={24} strokeWidth={2.5} aria-hidden="true" />
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[#92a4a6] text-[11px] sm:text-[13px] font-medium truncate leading-tight">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[11px] font-medium leading-tight text-nav-inactive sm:text-[13px]">
           {title}
         </p>
-        <p className="text-[#054a57] text-[16px] sm:text-[20px] font-bold mt-0.5 truncate">
+        <p className="mt-0.5 truncate text-[16px] font-bold text-nav-primary sm:text-[20px]">
           {value}
         </p>
       </div>
@@ -168,14 +170,14 @@ function SummaryCard({ title, value, icon: Icon, color }: SummaryCardProps) {
 
 function DailyStatsChart({ data }: { data: DailyStat[] }) {
   return (
-    <div className="bg-white rounded-[16px] p-6 shadow-sm">
-      <h2 className="text-[18px] font-bold text-[#054a57] mb-4">일별 질문 수 추이</h2>
+    <div className="rounded-[16px] bg-white p-6 shadow-sm">
+      <h2 className="mb-4 text-[18px] font-bold text-nav-primary">일별 질문 수 추이</h2>
       <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5f4f5" />
-            <XAxis dataKey="date" tick={{ fill: "#92a4a6", fontSize: 11 }} />
-            <YAxis tick={{ fill: "#92a4a6", fontSize: 12 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
+            <XAxis dataKey="date" tick={{ fill: CHART_COLORS.inactive, fontSize: 11 }} />
+            <YAxis tick={{ fill: CHART_COLORS.inactive, fontSize: 12 }} />
             <Tooltip
               contentStyle={{
                 borderRadius: "12px",
@@ -186,9 +188,9 @@ function DailyStatsChart({ data }: { data: DailyStat[] }) {
             <Line
               type="monotone"
               dataKey="count"
-              stroke="#5eb9ca"
+              stroke={CHART_COLORS.accent}
               strokeWidth={3}
-              dot={{ r: 4, fill: "#5eb9ca" }}
+              dot={{ r: 4, fill: CHART_COLORS.accent }}
               name="질문 수"
             />
           </LineChart>
@@ -198,15 +200,17 @@ function DailyStatsChart({ data }: { data: DailyStat[] }) {
   );
 }
 
-function UserTypePieChart({ memberCount, guestCount }: { memberCount: number; guestCount: number }) {
+function UserTypePieChart({
+  memberCount, guestCount,
+}: { memberCount: number; guestCount: number }) {
   const data = [
-    { name: "로그인 유저",   value: memberCount, color: PIE_COLORS.member },
-    { name: "비로그인 유저", value: guestCount,  color: PIE_COLORS.guest  },
+    { name: "로그인 유저", value: memberCount, color: CHART_COLORS.accent },
+    { name: "비로그인 유저", value: guestCount, color: CHART_COLORS.inactive },
   ];
 
   return (
-    <div className="bg-white rounded-[16px] p-6 shadow-sm">
-      <h2 className="text-[18px] font-bold text-[#054a57] mb-4">사용자 유형 분포</h2>
+    <div className="rounded-[16px] bg-white p-6 shadow-sm">
+      <h2 className="mb-4 text-[18px] font-bold text-nav-primary">사용자 유형 분포</h2>
       <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -219,7 +223,7 @@ function UserTypePieChart({ memberCount, guestCount }: { memberCount: number; gu
               paddingAngle={5}
               dataKey="value"
             >
-              {data.map((entry) => (
+              {data.map(entry => (
                 <Cell key={entry.name} fill={entry.color} />
               ))}
             </Pie>
@@ -232,31 +236,33 @@ function UserTypePieChart({ memberCount, guestCount }: { memberCount: number; gu
   );
 }
 
-function TopQuestionsTable({ questions, totalChats }: { questions: TopQuestion[]; totalChats: number }) {
+function TopQuestionsTable({
+  questions, totalChats,
+}: { questions: TopQuestion[]; totalChats: number }) {
   return (
-    <div className="bg-white rounded-[16px] p-6 shadow-sm">
-      <h2 className="text-[18px] font-bold text-[#054a57] mb-6">자주 입력된 질문 TOP 20</h2>
+    <div className="rounded-[16px] bg-white p-6 shadow-sm">
+      <h2 className="mb-6 text-[18px] font-bold text-nav-primary">자주 입력된 질문 TOP 20</h2>
       {questions.length === 0 ? (
-        <p className="text-[#92a4a6] text-[14px]">데이터가 없습니다.</p>
+        <p className="text-[14px] text-nav-inactive">데이터가 없습니다.</p>
       ) : (
-        <ol className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+        <ol className="grid grid-cols-1 gap-x-12 gap-y-6 md:grid-cols-2">
           {questions.map((item, index) => {
             const pct = toPercentage(item.count, totalChats);
             return (
-              <li key={index} className="space-y-2">
-                <div className="flex justify-between items-center">
+              <li key={item.question} className="space-y-2">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-[#5eb9ca] font-bold text-[16px]" aria-hidden="true">
+                    <span className="text-[16px] font-bold text-nav-accent" aria-hidden="true">
                       {String(index + 1).padStart(2, "0")}
                     </span>
-                    <span className="text-[#054a57] text-[14px]">{item.question}</span>
+                    <span className="text-[14px] text-nav-primary">{item.question}</span>
                   </div>
-                  <span className="text-[#92a4a6] text-[12px] shrink-0 ml-2">
+                  <span className="ml-2 shrink-0 text-[12px] text-nav-inactive">
                     {item.count.toLocaleString()}건 ({pct}%)
                   </span>
                 </div>
                 <div
-                  className="w-full h-2 bg-[#f6fbff] rounded-full overflow-hidden"
+                  className="h-2 w-full overflow-hidden rounded-full bg-nav-active-bg-from"
                   role="progressbar"
                   aria-valuenow={Number(pct)}
                   aria-valuemin={0}
@@ -264,7 +270,7 @@ function TopQuestionsTable({ questions, totalChats }: { questions: TopQuestion[]
                   aria-label={`${item.question} 비율`}
                 >
                   <div
-                    className="h-full bg-[#5eb9ca] rounded-full transition-all duration-1000"
+                    className="h-full rounded-full bg-nav-accent transition-all duration-1000"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -277,30 +283,34 @@ function TopQuestionsTable({ questions, totalChats }: { questions: TopQuestion[]
   );
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── 메인 컴포넌트 ─────────────────────────────────────────
 
 export default function AdminStatistics() {
   const { alert, triggerAlert, closeAlert } = useAlert();
-  const { stats, loading, fetchStats }      = useStatistics(triggerAlert);
+  const { stats, loading, fetchStats } = useStatistics(triggerAlert);
 
   const display = stats ?? FALLBACK_STATS;
 
   return (
     <AdminLayout>
-      <div className="bg-[#f6fbff] min-h-screen">
+      <div className="min-h-screen bg-[#f0f9ff]">
 
-        {/* ── Page Header ───────────────────────────────────────────────── */}
-        <div className="bg-white border-b border-[#e5f4f5] px-5 py-5 flex items-center justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <h1 className="font-bold text-[22px] sm:text-[32px] text-[#054a57] truncate">챗봇 통계</h1>
-            <p className="text-[12px] sm:text-[14px] text-[#92a4a6] truncate">실시간 사용 현황 분석</p>
+        {/* ── 페이지 헤더 ── */}
+        <div className="flex items-center justify-between gap-2 border-b border-nav-inactive/20 bg-white px-5 py-5">
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-[22px] font-bold text-nav-primary sm:text-[32px]">
+              챗봇 통계
+            </h1>
+            <p className="truncate text-[12px] text-nav-inactive sm:text-[14px]">
+              실시간 사용 현황 분석
+            </p>
           </div>
           <button
             onClick={fetchStats}
             disabled={loading}
             aria-label={loading ? "데이터 갱신 중" : "통계 새로고침"}
             aria-busy={loading}
-            className="flex-shrink-0 px-3 py-2 bg-[#f0f9fa] text-[#5eb9ca] rounded-xl font-bold text-[12px] sm:text-sm hover:bg-[#e5f4f5] disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-sm"
+            className="flex shrink-0 items-center gap-1.5 rounded-xl bg-nav-active-bg-from px-3 py-2 text-[12px] font-bold text-nav-accent shadow-sm transition-all hover:bg-nav-active-bg-to disabled:opacity-50 sm:text-sm"
           >
             <Clock size={14} className={loading ? "animate-spin" : ""} aria-hidden="true" />
             <span className="whitespace-nowrap">{loading ? "갱신 중" : "새로고침"}</span>
@@ -309,16 +319,16 @@ export default function AdminStatistics() {
 
         <div className="p-4 sm:p-8">
 
-          {/* ── Summary Cards ─────────────────────────────────────────── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8">
-            <SummaryCard title="질문 수"      value={`${display.totalChats.toLocaleString()}건`}        icon={MessageSquare} color="bg-[#5eb9ca]" />
-            <SummaryCard title="활성 유저"    value={`${display.memberUserCount.toLocaleString()}명`}   icon={UserCheck}     color="bg-[#28c76f]" />
-            <SummaryCard title="비로그인 유저 질문 수" value={`${display.guestSessionCount.toLocaleString()}개`} icon={Users}         color="bg-[#ff9f43]" />
-            <SummaryCard title="평균 응답"    value={`${display.avgResponseTime}ms`}                    icon={Clock}         color="bg-[#ea5455]" />
+          {/* ── 요약 카드 ── */}
+          <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
+            <SummaryCard title="질문 수" value={`${display.totalChats.toLocaleString()}건`} icon={MessageSquare} color="bg-nav-accent" />
+            <SummaryCard title="활성 유저" value={`${display.memberUserCount.toLocaleString()}명`} icon={UserCheck} color="bg-[#28c76f]" />
+            <SummaryCard title="비로그인 유저 질문 수" value={`${display.guestSessionCount.toLocaleString()}개`} icon={Users} color="bg-[#ff9f43]" />
+            <SummaryCard title="평균 응답" value={`${display.avgResponseTime}ms`} icon={Clock} color="bg-[#ea5455]" />
           </div>
 
-          {/* ── Charts ────────────────────────────────────────────────── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* ── 차트 ── */}
+          <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <DailyStatsChart data={display.dailyStats} />
             <UserTypePieChart
               memberCount={display.memberUserCount}
@@ -326,7 +336,7 @@ export default function AdminStatistics() {
             />
           </div>
 
-          {/* ── Top Questions ─────────────────────────────────────────── */}
+          {/* ── 자주 입력된 질문 ── */}
           <TopQuestionsTable
             questions={display.topQuestions}
             totalChats={display.totalChats}
@@ -334,33 +344,33 @@ export default function AdminStatistics() {
         </div>
       </div>
 
-      {/* ── Alert Modal ───────────────────────────────────────────────────── */}
+      {/* ── 알림 모달 ── */}
       {alert.show && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="alert-title"
           className="fixed inset-0 z-[100] flex items-center justify-center px-8"
+          onClick={closeAlert}
         >
+          <div className="absolute inset-0 bg-nav-primary/20 backdrop-blur-[3px]" aria-hidden="true" />
           <div
-            className="absolute inset-0 bg-[#054a57]/20 backdrop-blur-[3px]"
-            onClick={closeAlert}
-            aria-hidden="true"
-          />
-          <div className="relative bg-white w-full max-w-[320px] rounded-[28px] shadow-2xl p-7 animate-in fade-in zoom-in duration-200">
+            className="relative w-full max-w-[320px] animate-in fade-in zoom-in duration-200 rounded-[28px] bg-white p-7 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="flex flex-col items-center text-center">
-              <div className="size-[56px] bg-[#f0f9ff] rounded-full flex items-center justify-center mb-4">
-                <AlertCircle className="text-[#5eb9ca]" size={28} aria-hidden="true" />
+              <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-nav-active-bg-from">
+                <AlertCircle className="text-nav-accent" size={28} aria-hidden="true" />
               </div>
-              <h2 id="alert-title" className="text-[17px] font-bold text-[#054a57] mb-2">
+              <h2 id="alert-title" className="mb-2 text-[17px] font-bold text-nav-primary">
                 {alert.title}
               </h2>
-              <p className="text-[14px] font-medium text-[#7aaeb7] leading-relaxed mb-6 whitespace-pre-wrap">
+              <p className="mb-6 whitespace-pre-wrap text-[14px] font-medium leading-relaxed text-nav-accent">
                 {alert.message}
               </p>
               <button
                 onClick={closeAlert}
-                className="w-full h-[50px] bg-[#5eb9ca] text-white font-bold rounded-[18px] active:scale-[0.96] shadow-md"
+                className="h-[50px] w-full rounded-[18px] bg-nav-accent font-bold text-white shadow-md transition-all active:scale-[0.96]"
               >
                 확인
               </button>

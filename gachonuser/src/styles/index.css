@@ -23,6 +23,18 @@ input:focus {
   outline: none !important;
 }
 
+/* 스크롤바 숨기기 */
+
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, Opera */
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none !important;  /* IE and Edge */
+    scrollbar-width: none !important;  /* Firefox */
+  }
+}
+
 /* Admin User Table 전역 스크롤바 스타일 */
 
 /* 1. 테이블 스크롤바 전체 설정 */
@@ -49,5 +61,3 @@ input:focus {
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
   background: #5eb9ca !important; 
 }
-
-.hide-scrollbar::-webkit-scrollbar { display: none; }
