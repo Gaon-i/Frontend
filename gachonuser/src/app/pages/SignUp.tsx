@@ -327,9 +327,14 @@ export default function SignUp() {
         roomNo: `${roomNo}`,
       });
 
-      if (res.data.code === 201) {
+      // if (res.data.code === 201) {
+      if (res.data.code === 200 || res.data.code === 201) {
         setAlert({ show: true, message: "가온이의 가족이 되신 것을 환영합니다!", type: "success" });
       }
+      // 또는 응답 status로 체크
+      // if (res.status === 200 || res.status === 201) {
+      //   setAlert({ show: true, message: "가온이의 가족이 되신 것을 환영합니다!", type: "success" });
+      // }
     } catch (error: any) {
       console.log("에러 상세:", error.response?.data);
 
