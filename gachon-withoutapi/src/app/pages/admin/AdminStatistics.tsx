@@ -7,7 +7,7 @@ import {
   CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis,
 } from "recharts";
-import AdminLayout from "../components/AdminLayout";
+import AdminLayout from "../../components/AdminLayout";
 
 // ─── 타입 ─────────────────────────────────────────────────
 

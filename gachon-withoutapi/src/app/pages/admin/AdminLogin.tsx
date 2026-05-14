@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Database, Activity,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import iconLogo from "../icons/GAONI.svg";
+import iconLogo from "../../icons/GAONI.svg";
 
 // ─── 타입 ─────────────────────────────────────────────────
 

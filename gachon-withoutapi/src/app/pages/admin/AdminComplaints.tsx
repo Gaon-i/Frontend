@@ -4,7 +4,7 @@ import {
   User, Info, Loader2, Image as ImageIcon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import AdminLayout from "../components/AdminLayout";
+import AdminLayout from "../../components/AdminLayout";
 
 // ─── 타입 ─────────────────────────────────────────────────
 

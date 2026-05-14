@@ -406,15 +406,15 @@ export default function AdminRegulations() {
                     {/* ── 문서 테이블 ── */}
                     <div className="overflow-hidden rounded-[24px] border border-[#f1f5f9] bg-white shadow-sm">
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[1100px] table-fixed">
+                            <table className="w-full table-fixed">
                                 <thead className="bg-[#f0f9ff]">
                                     <tr>
-                                        <th className="w-[300px] px-6 py-4 text-left text-[13px] font-semibold text-nav-inactive">문서 제목</th>
-                                        <th className="w-[120px] px-6 py-4 text-left text-[13px] font-semibold text-nav-inactive">버전</th>
-                                        <th className="w-[150px] px-6 py-4 text-left text-[13px] font-semibold text-nav-inactive">생활관</th>
-                                        <th className="w-[120px] px-6 py-4 text-left text-[13px] font-semibold text-nav-inactive">상태</th>
-                                        <th className="w-[180px] px-6 py-4 text-left text-[13px] font-semibold text-nav-inactive">수정일</th>
-                                        <th className="w-[100px] px-6 py-4 text-right text-[13px] font-semibold text-nav-inactive">상세</th>
+                                        <th className="w-[60%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive">문서 제목</th>
+                                        <th className="hidden w-[12%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive xl:table-cell">버전</th>
+                                        <th className="hidden w-[18%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive lg:table-cell">생활관</th>
+                                        <th className="hidden w-[18%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive lg:table-cell">상태</th>
+                                        <th className="hidden w-[15%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive xl:table-cell">수정일</th>
+                                        <th className="w-[20%] px-4 py-4 text-right text-[13px] font-semibold text-nav-inactive">상세</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-nav-inactive/20">
@@ -431,42 +431,41 @@ export default function AdminRegulations() {
                                                 onClick={() => setSelectedDoc(doc)}
                                                 className="group cursor-pointer transition-colors hover:bg-[#f0f9ff]"
                                             >
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-start gap-3">
-                                                        <div className="mt-0.5 rounded-lg bg-nav-active-bg-from p-2 text-nav-accent transition-colors group-hover:bg-nav-accent group-hover:text-white">
-                                                            <FileText size={20} />
+                                                <td className="px-4 py-4">
+                                                    <div className="flex items-start gap-2 min-w-0">
+                                                        <div className="mt-0.5 shrink-0 rounded-lg bg-nav-active-bg-from p-1.5 text-nav-accent transition-colors group-hover:bg-nav-accent group-hover:text-white">
+                                                            <FileText size={16} />
                                                         </div>
-                                                        <div>
-                                                            <p className="line-clamp-1 text-[14px] font-bold text-nav-primary">{doc.title}</p>
-                                                            <p className="mt-0.5 text-[11px] text-nav-inactive">{doc.document_id}</p>
+                                                        <div className="min-w-0">
+                                                            <p className="truncate text-[13px] font-bold text-nav-primary">{doc.title}</p>
+                                                            <p className="truncate mt-0.5 text-[11px] text-nav-inactive">{doc.document_id}</p>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
+                                                <td className="hidden px-4 py-4 xl:table-cell">
                                                     <div className="flex flex-col">
-                                                        <span className="text-[13px] font-medium text-nav-primary">{doc.document_version}</span>
-                                                        <span className="text-[11px] text-nav-inactive">{doc.source_type}</span>
+                                                        <span className="whitespace-nowrap text-[12px] font-medium text-nav-primary">{doc.document_version}</span>
+                                                        <span className="whitespace-nowrap text-[11px] text-nav-inactive">{doc.source_type}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 text-[13px] text-nav-primary">
+                                                <td className="hidden whitespace-nowrap px-4 py-4 text-[12px] text-nav-primary lg:table-cell">
                                                     {doc.dormitory || "전체"}
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ${doc.is_active ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"
-                                                        }`}>
-                                                        {doc.is_active ? <Eye size={12} /> : <EyeOff size={12} />}
+                                                <td className="hidden px-4 py-4 lg:table-cell">
+                                                    <span className={`flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${doc.is_active ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"}`}>
+                                                        {doc.is_active ? <Eye size={11} /> : <EyeOff size={11} />}
                                                         {doc.is_active ? "활성" : "비활성"}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-[13px] text-nav-inactive">
-                                                    <div className="flex items-center gap-2">
-                                                        <Calendar size={14} />
+                                                <td className="hidden whitespace-nowrap px-4 py-4 text-[12px] text-nav-inactive xl:table-cell">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Calendar size={13} />
                                                         {new Date(doc.updated_at).toLocaleDateString()}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <button className="rounded-lg p-2 text-nav-inactive transition-all group-hover:bg-nav-active-bg-from group-hover:text-nav-accent">
-                                                        <ChevronRight size={20} />
+                                                <td className="px-4 py-4 text-right">
+                                                    <button className="rounded-lg p-1.5 text-nav-inactive transition-all group-hover:bg-nav-active-bg-from group-hover:text-nav-accent">
+                                                        <ChevronRight size={18} />
                                                     </button>
                                                 </td>
                                             </tr>
@@ -487,7 +486,7 @@ export default function AdminRegulations() {
                     <div className="mt-6 flex items-center gap-3 rounded-[16px] border border-nav-accent/20 bg-nav-active-bg-from p-4">
                         <Info className="text-nav-accent" size={20} />
                         <p className="text-[13px] font-medium text-nav-accent">
-                            현재 활성화된 문서(is_active = true)만 챗봇 상담 및 학생 페이지에 노출됩니다.
+                            현재 활성화된 문서만 챗봇 상담 및 학생 페이지에 노출됩니다.
                         </p>
                     </div>
                 </div>

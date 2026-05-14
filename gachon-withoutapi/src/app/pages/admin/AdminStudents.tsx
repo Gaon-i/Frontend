@@ -6,7 +6,7 @@ import {
   UserCircle, AlertCircle, Building2, ChevronDown, Check, X,
   Calendar, User, Mail, Phone, Home,
 } from "lucide-react";
-import AdminLayout from "../components/AdminLayout";
+import AdminLayout from "../../components/AdminLayout";
 
 // ─── 타입 ─────────────────────────────────────────────────
 
@@ -472,7 +472,7 @@ export default function AdminStudents() {
           {/* ── 검색 바 ── */}
           <div className="mb-8 min-w-0 rounded-[24px] border border-[#f1f5f9] bg-white p-4 shadow-sm md:p-8">
             <form onSubmit={handleSearch} className="flex flex-col items-stretch gap-4 lg:flex-row lg:items-end lg:gap-5">
-              <div className="flex flex-[3] flex-col">
+              <div className="flex flex-1 flex-col lg:flex-[3]">
                 <label htmlFor="keyword" className="mb-2 ml-1 text-[13px] font-bold text-nav-primary">
                   검색어
                 </label>
@@ -506,82 +506,125 @@ export default function AdminStudents() {
             </form>
           </div>
 
-          {/* ── 유저 테이블 ── */}
-          <div className="mb-6 overflow-hidden rounded-[16px] border border-[#f1f5f9] bg-white shadow-sm">
-            <div className="w-full overflow-x-auto pb-2">
-              <table className="w-full min-w-[1000px] table-fixed">
-                <thead className="bg-[#f0f9ff]">
+          {/* ── 유저 테이블 (데스크탑) ── */}
+          <div className="mb-6 hidden overflow-hidden rounded-[16px] border border-[#f1f5f9] bg-white shadow-sm lg:block">
+            <table className="w-full table-fixed">
+              <thead className="bg-[#f0f9ff]">
+                <tr>
+                  <th scope="col" className="w-[35%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive">사용자 정보</th>
+                  <th scope="col" className="w-[18%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive">생활관</th>
+                  <th scope="col" className="w-[17%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive">계정 상태</th>
+                  <th scope="col" className="w-[20%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive">가입일</th>
+                  <th scope="col" className="w-[10%] px-4 py-4 text-right text-[13px] font-semibold text-nav-inactive">관리</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-nav-inactive/20">
+                {loading ? (
                   <tr>
-                    <th scope="col" className="w-[250px] px-6 py-4 text-left text-[13px] font-semibold text-nav-inactive">사용자 정보</th>
-                    <th scope="col" className="w-[150px] px-6 py-4 text-left text-[13px] font-semibold text-nav-inactive">생활관</th>
-                    <th scope="col" className="w-[120px] px-6 py-4 text-left text-[13px] font-semibold text-nav-inactive">계정 상태</th>
-                    <th scope="col" className="w-[150px] px-6 py-4 text-left text-[13px] font-semibold text-nav-inactive">가입일</th>
-                    <th scope="col" className="w-[100px] px-6 py-4 text-right text-[13px] font-semibold text-nav-inactive">관리</th>
+                    <td colSpan={5} className="py-20 text-center">
+                      <Loader2 className="mx-auto animate-spin text-nav-accent" aria-label="로딩 중" />
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-nav-inactive/20">
-                  {loading ? (
-                    <tr>
-                      <td colSpan={5} className="py-20 text-center">
-                        <Loader2 className="mx-auto animate-spin text-nav-accent" aria-label="로딩 중" />
-                      </td>
-                    </tr>
-                  ) : users.length > 0 ? (
-                    users.map(user => (
-                      <tr
-                        key={user.userId}
-                        onClick={() => setSelectedUserId(user.userId)}
-                        tabIndex={0}
-                        onKeyDown={e => e.key === "Enter" && setSelectedUserId(user.userId)}
-                        aria-label={`${user.name} 상세 보기`}
-                        className="cursor-pointer transition-colors hover:bg-[#f0f9ff]"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="rounded-full bg-nav-active-bg-from p-2 text-nav-accent">
-                              <UserCircle size={24} aria-hidden="true" />
-                            </div>
-                            <div>
-                              <p className="text-[14px] font-bold text-nav-primary">{user.name}</p>
-                              <p className="text-[12px] text-nav-inactive">{user.email}</p>
-                            </div>
+                ) : users.length > 0 ? (
+                  users.map(user => (
+                    <tr
+                      key={user.userId}
+                      onClick={() => setSelectedUserId(user.userId)}
+                      tabIndex={0}
+                      onKeyDown={e => e.key === "Enter" && setSelectedUserId(user.userId)}
+                      aria-label={`${user.name} 상세 보기`}
+                      className="cursor-pointer transition-colors hover:bg-[#f0f9ff]"
+                    >
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="shrink-0 rounded-full bg-nav-active-bg-from p-2 text-nav-accent">
+                            <UserCircle size={20} aria-hidden="true" />
                           </div>
-                        </td>
-                        <td className="px-6 py-4 text-[13px] text-nav-primary">
-                          {user.dormitoryId}동 {user.roomId}호
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${ACCOUNT_STATUS_STYLES[user.accountStatus] ?? "bg-gray-100 text-gray-500"
-                            }`}>
-                            {ACCOUNT_STATUS_LABELS[user.accountStatus] ?? user.accountStatus}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-[13px] text-nav-inactive">
-                          <time dateTime={user.createdAt}>
-                            {new Date(user.createdAt).toLocaleDateString()}
-                          </time>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={e => { e.stopPropagation(); navigate(`/admin/users/${user.userId}`); }}
-                            aria-label={`${user.name} 상세 정보 페이지로 이동`}
-                            className="rounded-lg p-2 text-nav-accent transition-colors hover:bg-nav-accent/10"
-                          >
-                            <MoreVertical size={18} aria-hidden="true" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="py-20 text-center text-nav-inactive">
-                        검색 결과가 없습니다.
+                          <div className="min-w-0">
+                            <p className="truncate text-[13px] font-bold text-nav-primary">{user.name}</p>
+                            <p className="truncate text-[11px] text-nav-inactive">{user.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-[13px] text-nav-primary">
+                        {user.dormitoryId}동 {user.roomId}호
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${ACCOUNT_STATUS_STYLES[user.accountStatus] ?? "bg-gray-100 text-gray-500"}`}>
+                          {ACCOUNT_STATUS_LABELS[user.accountStatus] ?? user.accountStatus}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-[12px] text-nav-inactive">
+                        <time dateTime={user.createdAt}>
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </time>
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <button
+                          onClick={e => { e.stopPropagation(); setSelectedUserId(user.userId); }}
+                          aria-label={`${user.name} 상세 정보 보기`}
+                          className="rounded-lg p-2 text-nav-accent transition-colors hover:bg-nav-accent/10"
+                        >
+                          <MoreVertical size={18} aria-hidden="true" />
+                        </button>
                       </td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-20 text-center text-nav-inactive">
+                      검색 결과가 없습니다.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ── 유저 카드 리스트 (모바일) ── */}
+          <div className="mb-6 space-y-3 lg:hidden">
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="animate-spin text-nav-accent" aria-label="로딩 중" />
+              </div>
+            ) : users.length > 0 ? (
+              users.map(user => (
+                <div
+                  key={user.userId}
+                  onClick={() => setSelectedUserId(user.userId)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => e.key === "Enter" && setSelectedUserId(user.userId)}
+                  aria-label={`${user.name} 상세 보기`}
+                  className="cursor-pointer rounded-[20px] border border-transparent bg-white p-5 shadow-sm transition-all hover:border-nav-accent/30 hover:shadow-md"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-full bg-nav-active-bg-from p-2 text-nav-accent">
+                        <UserCircle size={24} aria-hidden="true" />
+                      </div>
+                      <div>
+                        <p className="text-[15px] font-bold text-nav-primary">{user.name}</p>
+                        <p className="text-[12px] text-nav-inactive">{user.email}</p>
+                      </div>
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${ACCOUNT_STATUS_STYLES[user.accountStatus] ?? "bg-gray-100 text-gray-500"}`}>
+                      {ACCOUNT_STATUS_LABELS[user.accountStatus] ?? user.accountStatus}
+                    </span>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-[#f0f7f8] pt-3 text-[12px] text-nav-inactive">
+                    <span>{user.dormitoryId}동 {user.roomId}호</span>
+                    <time dateTime={user.createdAt}>
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </time>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-20 text-center text-nav-inactive">
+                검색 결과가 없습니다.
+              </div>
+            )}
           </div>
 
           {/* ── 페이지네이션 ── */}
