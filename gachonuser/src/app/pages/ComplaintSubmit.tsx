@@ -114,14 +114,20 @@ export default function ComplaintSubmit() {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append("category", categoryId);
-      formData.append("title", title.trim());
-      formData.append("content", content.trim());
+      formData.append(
+        "request",
+        new Blob(
+          [JSON.stringify({
+            category: categoryId,
+            title: title.trim(),
+            content: content.trim(),
+          })],
+          { type: "application/json" }
+        )
+      );
       images.forEach(img => formData.append("images", img.file));
 
-      const response = await api.post("/complaints", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const response = await api.post("/complaints", formData);
 
       if (response.data.code === 201) {
         setAlert({ show: true, message: "민원이 정상적으로 접수되었습니다.", type: "success" });
