@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Database, Activity,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import iconLogo from "../../icons/GAONI.svg";
+import iconLogo from "../icons/GAONI.svg";
 
 // ─── 타입 ─────────────────────────────────────────────────
 
@@ -39,11 +39,6 @@ const FEATURE_ITEMS: FeatureItem[] = [
   { icon: Database, title: "데이터 관리" },
 ];
 
-const ERROR_MESSAGES: Record<number, string> = {
-  401: "아이디 또는 비밀번호가 올바르지 않습니다.",
-  403: "비활성화된 관리자 계정입니다.\n상위 관리자에게 문의하세요.",
-};
-
 const SESSION_KEYS = {
   isLoggedIn: "isLoggedIn",
   adminId: "adminId",
@@ -55,27 +50,20 @@ const SESSION_KEYS = {
 const LABEL_CLASS =
   "mb-1.5 ml-1 text-[10px] font-bold uppercase tracking-wider text-nav-inactive";
 
-const FAKE_ADMIN = {
-  loginId: "test2@gachon.ac.kr",
+const TEST_ACCOUNT = {
+  id: "test2@gachon.ac.kr",
   password: "zxcv!@#$",
-  userData: {
-    adminId: 1,
-    loginId: "test2@gachon.ac.kr",
-    name: "관리자",
-    adminRole: "ADMIN",
-  } satisfies AdminUserData,
 };
 
 // ─── 커스텀 훅 ─────────────────────────────────────────────
 
-// alert 상태는 컴포넌트에서 관리, 훅은 로직만 담당
-function useLoginForm(onError: (msg: string) => void) {
+function useLoginForm() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState<LoginForm>({ loginId: "", password: "" });
   const [errors, setErrors] = useState<LoginFormErrors>({ loginId: "", password: "" });
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
 
   // 제출 이후부터 실시간 유효성 검사
   useEffect(() => {
@@ -99,39 +87,39 @@ function useLoginForm(onError: (msg: string) => void) {
     sessionStorage.setItem(SESSION_KEYS.userRole, userData.adminRole);
   }, []);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitted(true);
 
     if (!form.loginId.trim() || !form.password.trim()) return;
 
-    setIsLoading(true);
-    await new Promise(res => setTimeout(res, 600));
-
-    if (form.loginId === FAKE_ADMIN.loginId && form.password === FAKE_ADMIN.password) {
-      saveSession(FAKE_ADMIN.userData);
-      navigate("/admin/complaints");
-    } else {
-      onError("아이디 또는 비밀번호가 올바르지 않습니다.");
+    if (form.loginId !== TEST_ACCOUNT.id || form.password !== TEST_ACCOUNT.password) {
+      setErrors(prev => ({ ...prev, password: "아이디 또는 비밀번호가 올바르지 않습니다." }));
+      return;
     }
-    setIsLoading(false);
-  }, [form, navigate, saveSession, onError]);
 
-  return { form, errors, isLoading, handleChange, handleSubmit };
+    saveSession({
+      adminId: 1,
+      loginId: form.loginId,
+      name: "관리자",
+      adminRole: "ADMIN",
+    });
+    navigate("/admin/complaints");
+  }, [form, navigate, saveSession]);
+
+  return { form, errors, handleChange, handleSubmit };
 }
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────
 
 export default function AdminLogin() {
-  const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const { form, errors, handleChange, handleSubmit } = useLoginForm();
 
-  const { form, errors, isLoading, handleChange, handleSubmit } =
-    useLoginForm(msg => setAlertMsg(msg));
 
   return (
     <div className="relative flex min-h-screen w-full overflow-auto bg-[#f8fafc] p-4 font-sans antialiased sm:p-6 lg:items-center lg:justify-center lg:p-12">
 
-      {/* ── 알림 모달 ── */}
+      {/* ── 알림 모달 ──
       {alertMsg && (
         <div
           role="dialog"
@@ -164,7 +152,7 @@ export default function AdminLogin() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* ── 메인 카드 ── */}
       <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 isolate my-4 grid w-full max-w-[1000px] overflow-hidden rounded-[32px] border border-white/50 bg-white shadow-[0_40px_100px_-20px_rgba(5,74,87,0.12)] sm:my-auto sm:rounded-[40px] lg:min-h-[600px] lg:grid-cols-[1.1fr_1fr]">
@@ -279,7 +267,7 @@ export default function AdminLogin() {
 
             {/* 제출 버튼 */}
             <div className="pt-2">
-              <button
+              {/* <button
                 type="submit"
                 disabled={isLoading}
                 aria-busy={isLoading}
@@ -293,6 +281,12 @@ export default function AdminLogin() {
                 ) : (
                   <span>시스템 접속하기</span>
                 )}
+              </button> */}
+              <button
+                type="submit"
+                className="flex h-[56px] w-full items-center justify-center gap-2 rounded-[16px] bg-nav-accent font-black text-[15px] text-white shadow-lg shadow-nav-accent/20 transition-all hover:bg-nav-accent/90 active:scale-[0.98] disabled:bg-gray-300"
+              >
+                <span>시스템 접속하기</span>
               </button>
             </div>
           </form>

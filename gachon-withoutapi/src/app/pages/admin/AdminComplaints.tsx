@@ -4,7 +4,7 @@ import {
   User, Info, Loader2, Image as ImageIcon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import AdminLayout from "../../components/AdminLayout";
+import AdminLayout from "../components/AdminLayout";
 
 // ─── 타입 ─────────────────────────────────────────────────
 
@@ -89,22 +89,66 @@ const PATCH_STATUS_OPTIONS: { value: ComplaintStatus; label: string }[] = [
   { value: "COMPLETED", label: "처리 완료" },
 ];
 
-const ERROR_MESSAGES: Record<number, string> = {
-  403: "민원 목록 접근 권한이 없습니다.\n관리자 계정인지 확인해 주세요.",
-};
-
 const COUNT_KEY_MAP: Record<FilterValue, keyof TotalCounts> = {
   전체: "ALL",
   RECEIVED: "RECEIVED",
   COMPLETED: "COMPLETED",
 };
 
-const FAKE_COMPLAINTS: ComplaintDetail[] = [
-  { complaintId: 1, userId: 1, userName: "홍길동", category: "FACILITY", title: "화장실 수도꼭지 고장", content: "3층 남자 화장실 두 번째 칸 수도꼭지가 잠기지 않습니다.", status: "RECEIVED", queueNo: 1, dormitoryId: 1, roomId: 302, assignedAdminId: null, adminComment: null, resolvedAt: null, createdAt: "2025-05-10T10:00:00", updatedAt: "2025-05-10T10:00:00", images: [] },
-  { complaintId: 2, userId: 2, userName: "김철수", category: "NOISE", title: "윗층 소음 문제", content: "매일 밤 11시 이후 윗층에서 뛰는 소리가 납니다.", status: "RECEIVED", queueNo: 2, dormitoryId: 2, roomId: 405, assignedAdminId: null, adminComment: null, resolvedAt: null, createdAt: "2025-05-09T14:30:00", updatedAt: "2025-05-09T14:30:00", images: [] },
-  { complaintId: 3, userId: 3, userName: "이영희", category: "CLEANING", title: "복도 청소 요청", content: "2층 복도 끝쪽에 쓰레기가 방치되어 있습니다.", status: "COMPLETED", dormitoryId: 1, roomId: 210, assignedAdminId: 1, adminComment: "확인 후 조치 완료하였습니다.", resolvedAt: "2025-05-08T16:00:00", createdAt: "2025-05-07T09:00:00", updatedAt: "2025-05-08T16:00:00", images: [] },
-  { complaintId: 4, userId: 4, userName: "박민준", category: "RULE", title: "취침 시간 규칙 위반", content: "옆 호실에서 새벽 2시까지 큰 소리로 통화합니다.", status: "RECEIVED", queueNo: 3, dormitoryId: 3, roomId: 118, assignedAdminId: null, adminComment: null, resolvedAt: null, createdAt: "2025-05-06T22:10:00", updatedAt: "2025-05-06T22:10:00", images: [] },
-  { complaintId: 5, userId: 5, userName: "최수연", category: "ETC", title: "택배 보관함 고장", content: "1층 택배 보관함 3번이 열리지 않습니다.", status: "COMPLETED", dormitoryId: 2, roomId: 312, assignedAdminId: 1, adminComment: "수리 업체 방문 후 수리 완료했습니다.", resolvedAt: "2025-05-05T11:00:00", createdAt: "2025-05-04T15:20:00", updatedAt: "2025-05-05T11:00:00", images: [] },
+const DUMMY_COMPLAINTS: ComplaintDetail[] = [
+  {
+    complaintId: 1,
+    userId: 101,
+    userName: "김철수",
+    category: "FACILITY",
+    title: "화장실 수도꼭지 고장",
+    content: "3층 화장실 수도꼭지가 잠기지 않아 물이 계속 흐르고 있습니다.",
+    status: "RECEIVED",
+    queueNo: 1,
+    dormitoryId: 1,
+    roomId: 301,
+    assignedAdminId: null,
+    adminComment: null,
+    resolvedAt: null,
+    createdAt: "2025-05-14T09:00:00",
+    updatedAt: "2025-05-14T09:00:00",
+    images: [],
+  },
+  {
+    complaintId: 2,
+    userId: 102,
+    userName: "이영희",
+    category: "NOISE",
+    title: "윗층 소음 문제",
+    content: "매일 밤 11시 이후에 윗층에서 뛰는 소리가 심합니다.",
+    status: "RECEIVED",
+    queueNo: 2,
+    dormitoryId: 2,
+    roomId: 205,
+    assignedAdminId: null,
+    adminComment: null,
+    resolvedAt: null,
+    createdAt: "2025-05-14T10:30:00",
+    updatedAt: "2025-05-14T10:30:00",
+    images: [],
+  },
+  {
+    complaintId: 3,
+    userId: 103,
+    userName: "박민준",
+    category: "CLEANING",
+    title: "공용 세탁실 청소 요청",
+    content: "세탁실 바닥에 먼지와 이물질이 쌓여 있어 청소가 필요합니다.",
+    status: "COMPLETED",
+    dormitoryId: 1,
+    roomId: 102,
+    assignedAdminId: 1,
+    adminComment: "청소 완료했습니다.",
+    resolvedAt: "2025-05-13T15:00:00",
+    createdAt: "2025-05-13T08:00:00",
+    updatedAt: "2025-05-13T15:00:00",
+    images: [],
+  },
 ];
 
 // ─── 유틸 ─────────────────────────────────────────────────
@@ -112,11 +156,6 @@ const FAKE_COMPLAINTS: ComplaintDetail[] = [
 const getDormitoryName = (id: number) => DORMITORY_NAMES[id] ?? `${id}생활관`;
 const formatDate = (iso: string) => iso.split("T")[0];
 const formatTime = (iso: string) => iso.split("T")[1]?.substring(0, 5) ?? "";
-
-function parseApiError(error: unknown, fallback: string): string {
-  const status = (error as { response?: { status?: number } }).response?.status ?? 0;
-  return ERROR_MESSAGES[status] ?? fallback;
-}
 
 // ─── 커스텀 훅 ─────────────────────────────────────────────
 
@@ -134,31 +173,26 @@ function useAlert() {
   return { alert, triggerAlert, closeAlert };
 }
 
-function useComplaints(triggerAlert: (title: string, msg: string) => void) {
+function useComplaints() {
   const [complaints, setComplaints] = useState<ComplaintDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<FilterValue>("전체");
   const [totalCounts, setTotalCounts] = useState<TotalCounts>({ ALL: 0, RECEIVED: 0, COMPLETED: 0 });
 
-  const fetchComplaints = useCallback(async () => {
+  const fetchComplaints = useCallback(() => {
     setLoading(true);
-    await new Promise(res => setTimeout(res, 500));
-
     const filtered = filterStatus === "전체"
-      ? FAKE_COMPLAINTS
-      : FAKE_COMPLAINTS.filter(c => c.status === filterStatus);
+      ? DUMMY_COMPLAINTS
+      : DUMMY_COMPLAINTS.filter(c => c.status === filterStatus);
 
     setComplaints(filtered);
-
-    if (filterStatus === "전체") {
-      setTotalCounts({
-        ALL: FAKE_COMPLAINTS.length,
-        RECEIVED: FAKE_COMPLAINTS.filter(c => c.status === "RECEIVED").length,
-        COMPLETED: FAKE_COMPLAINTS.filter(c => c.status === "COMPLETED").length,
-      });
-    }
+    setTotalCounts({
+      ALL: DUMMY_COMPLAINTS.length,
+      RECEIVED: DUMMY_COMPLAINTS.filter(c => c.status === "RECEIVED").length,
+      COMPLETED: DUMMY_COMPLAINTS.filter(c => c.status === "COMPLETED").length,
+    });
     setLoading(false);
-  }, [filterStatus, triggerAlert]);
+  }, [filterStatus]);
 
   useEffect(() => { fetchComplaints(); }, [fetchComplaints]);
 
@@ -179,16 +213,13 @@ function useComplaintDetail(
   const [adminComment, setAdminComment] = useState("");
   const [targetStatus, setTargetStatus] = useState<ComplaintStatus>("RECEIVED");
 
-  const openDetail = useCallback(async (id: number) => {
-    const found = FAKE_COMPLAINTS.find(c => c.complaintId === id);
-    if (found) {
-      setDetail(found);
-      setAdminComment(found.adminComment ?? "");
-      setTargetStatus(found.status);
-      setSelectedId(id);
-    } else {
-      triggerAlert("오류", "상세 정보를 불러올 수 없습니다.");
-    }
+  const openDetail = useCallback((id: number) => {
+    const found = DUMMY_COMPLAINTS.find(c => c.complaintId === id) ?? null;
+    if (!found) { triggerAlert("오류", "상세 정보를 불러올 수 없습니다."); return; }
+    setDetail(found);
+    setAdminComment(found.adminComment ?? "");
+    setTargetStatus(found.status);
+    setSelectedId(id);
   }, [triggerAlert]);
 
   const closeDetail = useCallback(() => {
@@ -196,18 +227,13 @@ function useComplaintDetail(
     setDetail(null);
   }, []);
 
-  const handleUpdateStatus = useCallback(async () => {
+  const handleUpdateStatus = useCallback(() => {
     if (!selectedId) return;
-    await new Promise(res => setTimeout(res, 400));
-
-    const idx = FAKE_COMPLAINTS.findIndex(c => c.complaintId === selectedId);
-    if (idx !== -1) {
-      FAKE_COMPLAINTS[idx] = {
-        ...FAKE_COMPLAINTS[idx],
-        status: targetStatus,
-        adminComment,
-        resolvedAt: targetStatus === "COMPLETED" ? new Date().toISOString() : null,
-      };
+    const target = DUMMY_COMPLAINTS.find(c => c.complaintId === selectedId);
+    if (target) {
+      target.status = targetStatus;
+      target.adminComment = adminComment;
+      if (targetStatus === "COMPLETED") target.resolvedAt = new Date().toISOString();
     }
     triggerAlert("처리 완료", "민원 처리가 정상적으로 완료되었습니다.");
     closeDetail();
@@ -442,7 +468,7 @@ export default function AdminComplaints() {
     complaints, loading,
     filterStatus, setFilterStatus,
     getCountByFilter, fetchComplaints,
-  } = useComplaints(triggerAlert);
+  } = useComplaints();
 
   const {
     selectedId, detail, adminComment, targetStatus,

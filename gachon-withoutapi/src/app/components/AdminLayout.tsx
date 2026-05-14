@@ -36,8 +36,7 @@ function useScrollLock(locked: boolean) {
   }, [locked]);
 }
 
-// 로그아웃 로직만 담당 — alert 상태는 컴포넌트에서 관리
-function useLogout(onError: (msg: string) => void) {
+function useLogout() {
   const navigate = useNavigate();
 
   const clearAuthData = useCallback(() => {
@@ -46,11 +45,7 @@ function useLogout(onError: (msg: string) => void) {
     navigate("/admin/auth/login");
   }, [navigate]);
 
-  const confirmLogout = useCallback(async () => {
-    clearAuthData();
-  }, [clearAuthData]);
-
-  return { confirmLogout };
+  return { confirmLogout: clearAuthData };
 }
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────
@@ -61,9 +56,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  // const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
-  const { confirmLogout } = useLogout(msg => setAlertMsg(msg));
+  const { confirmLogout } = useLogout();
 
   useScrollLock(isMobileMenuOpen || isLogoutModalOpen);
 
@@ -77,9 +72,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     setIsMobileMenuOpen(false);
   }, [navigate]);
 
-  const handleLogoutConfirm = useCallback(async () => {
+  const handleLogoutConfirm = useCallback(() => {
     setIsLogoutModalOpen(false);
-    await confirmLogout();
+    confirmLogout();
   }, [confirmLogout]);
 
   return (
@@ -231,7 +226,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
       </nav>
 
-      {/* ── 알림 모달 ── */}
+      {/* ── 알림 모달 ──
       {alertMsg && (
         <div
           role="dialog"
@@ -262,7 +257,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* ── 로그아웃 모달 ── */}
       {isLogoutModalOpen && (
