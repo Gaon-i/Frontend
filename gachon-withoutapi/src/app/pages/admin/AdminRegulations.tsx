@@ -7,7 +7,8 @@ import {
     Wrench, Plug, ClipboardList, Check,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import AdminLayout from "../components/AdminLayout";
+
+import AdminLayout from "../../components/AdminLayout";
 
 // ─── 타입 ─────────────────────────────────────────────────
 
