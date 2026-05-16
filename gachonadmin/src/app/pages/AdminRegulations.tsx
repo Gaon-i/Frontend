@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   FileText, Loader2, ChevronRight,
   Calendar, Link as LinkIcon, Tag, Eye, EyeOff,
   AlertCircle, LayoutGrid, Info, X, Globe, Clipboard,
   DoorOpen, Coffee, Building2, ScrollText, Bell, Tv2,
-  Wrench, Plug, ClipboardList, Check,
+  Wrench, Plug, ClipboardList, ChevronDown, Check,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
@@ -57,22 +57,14 @@ interface AlertState {
 const ALL_CATEGORY = "__ALL__";
 
 const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
-  "입·퇴사안내": DoorOpen,
-  "입퇴사 안내": DoorOpen,
-  "생활 정보": Coffee,
-  "생활관 소개": Building2,
-  "생활관안내": Building2,
-  "생활관 수칙": ScrollText,
-  "생활관 편의시설": Tv2,
-  "편의시설": Plug,
-  "시설안내": Wrench,
-  "생활관 이용안내": ClipboardList,
-  "공지": Bell,
-  "안내": Bell,
+  "admission": DoorOpen,
+  "facility": Plug,
+  "facility_usage": ClipboardList,
+  "intro": Building2,
+  "rules": ScrollText,
+  "tip": Wrench,
+  "tip_restroom": Wrench,
 };
-
-const CATEGORY_BTN_BASE =
-  "flex items-center gap-2 rounded-[16px] px-6 py-3 text-[14px] font-bold shadow-sm transition-all";
 
 // ─── 유틸 ─────────────────────────────────────────────────
 
@@ -101,6 +93,137 @@ function useAlert() {
 }
 
 // ─── 서브 컴포넌트 ─────────────────────────────────────────
+
+function CategorySelectBox({
+  categories,
+  selected,
+  totalCount,
+  onChange,
+}: {
+  categories: CategoryItem[];
+  selected: string;
+  totalCount: number;
+  onChange: (category: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const allOption = { category: ALL_CATEGORY, document_count: totalCount };
+  const allOptions = [allOption, ...categories];
+
+  const selectedItem = allOptions.find(o => o.category === selected);
+  const selectedLabel =
+    selected === ALL_CATEGORY ? "전체" : selected;
+  const SelectedIcon =
+    selected === ALL_CATEGORY ? LayoutGrid : getCategoryIcon(selected);
+
+  return (
+    <div className="relative w-full max-w-xs" ref={containerRef}>
+      <label className="mb-1.5 ml-1 block text-[12px] font-bold text-nav-primary">
+        카테고리
+      </label>
+      <button
+        type="button"
+        onClick={() => setIsOpen(prev => !prev)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        className={`flex w-full items-center justify-between rounded-[14px] border-2 px-4 py-3 outline-none transition-all ${isOpen
+          ? "border-nav-accent bg-white shadow-md"
+          : "border-transparent bg-white shadow-sm"
+          }`}
+      >
+        <div className="flex items-center gap-2">
+          <SelectedIcon
+            size={15}
+            className={isOpen ? "text-nav-accent" : "text-nav-inactive"}
+          />
+          <span
+            className={`text-[14px] font-bold ${isOpen ? "text-nav-accent" : "text-nav-primary"
+              }`}
+          >
+            {selectedLabel}
+          </span>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${isOpen
+              ? "bg-nav-accent/10 text-nav-accent"
+              : "bg-[#f0f9ff] text-nav-inactive"
+              }`}
+          >
+            {selectedItem?.document_count ?? totalCount}
+          </span>
+        </div>
+        <ChevronDown
+          size={18}
+          className={`transition-transform duration-200 ${isOpen ? "rotate-180 text-nav-accent" : "text-nav-inactive"
+            }`}
+          aria-hidden="true"
+        />
+      </button>
+
+      {isOpen && (
+        <ul
+          role="listbox"
+          className="absolute z-[100] mt-2 w-full animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden rounded-[18px] border border-nav-inactive/20 bg-white shadow-xl"
+        >
+          <div className="max-h-[260px] overflow-y-auto">
+            {allOptions.map(item => {
+              const isAll = item.category === ALL_CATEGORY;
+              const Icon = isAll ? LayoutGrid : getCategoryIcon(item.category);
+              const label = isAll ? "전체" : item.category;
+              const isSelected = selected === item.category;
+              const isChild = !isAll && item.category.includes("_");
+
+              return (
+                <li key={item.category} role="option" aria-selected={isSelected}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange(item.category);
+                      setIsOpen(false);
+                    }}
+                    className={`flex w-full items-center justify-between border-b border-[#f8fafc] text-left text-[14px] font-medium transition-colors last:border-none
+                ${isChild ? "pl-9 pr-5 py-3" : "px-5 py-3.5"}
+                ${isSelected
+                        ? "bg-nav-active-bg-from text-nav-accent"
+                        : "text-nav-primary hover:bg-[#f0f9ff] hover:text-nav-accent"
+                      }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {isChild && <span className="text-nav-inactive">↳</span>}
+                      <Icon size={14} className={isChild ? "opacity-60" : ""} />
+                      <span className={`font-bold ${isChild ? "text-[13px]" : ""}`}>
+                        {label}
+                      </span>
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] ${isSelected
+                        ? "bg-nav-accent/10 text-nav-accent"
+                        : "bg-[#f0f9ff] text-nav-inactive"
+                        }`}>
+                        {item.document_count}
+                      </span>
+                    </div>
+                    {isSelected && (
+                      <Check size={16} className="text-nav-accent" aria-hidden="true" />
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </div>
+        </ul>
+      )}
+    </div>
+  );
+}
 
 function RegulationDetailModal({ doc, onClose }: DetailModalProps) {
   return (
@@ -256,18 +379,30 @@ export default function AdminRegulations() {
   const fetchDocuments = useCallback(async (category: string) => {
     setLoading(true);
     try {
-      // ALL_CATEGORY일 때 파라미터 없이 전체 조회
-      const params: Record<string, string> = {};
-      if (category !== ALL_CATEGORY) params.category = category;
-
-      const { data } = await api.get<ApiResponse<{ items: RegulationDocument[] }>>(
-        "/regulations",
-        { params }
-      );
-      if (data.status === 200) {
-        setDocuments(data.data.items);
+      if (category === ALL_CATEGORY) {
+        // 전체 조회: 모든 카테고리 병렬 요청 후 합산
+        const results = await Promise.all(
+          categories.map(c =>
+            api.get<ApiResponse<{ items: RegulationDocument[] }>>(
+              "/regulations",
+              { params: { category: c.category } }
+            )
+          )
+        );
+        const allDocs = results.flatMap(r =>
+          r.data.status === 200 ? r.data.data.items : []
+        );
+        setDocuments(allDocs);
       } else {
-        triggerAlert("안내", data.message || "문서를 불러오지 못했습니다.");
+        const { data } = await api.get<ApiResponse<{ items: RegulationDocument[] }>>(
+          "/regulations",
+          { params: { category } }
+        );
+        if (data.status === 200) {
+          setDocuments(data.data.items);
+        } else {
+          triggerAlert("안내", data.message || "문서를 불러오지 못했습니다.");
+        }
       }
     } catch (error: unknown) {
       triggerAlert("오류", "문서 목록을 불러오는 중 오류가 발생했습니다.");
@@ -275,10 +410,15 @@ export default function AdminRegulations() {
     } finally {
       setLoading(false);
     }
-  }, [triggerAlert]);
+  }, [triggerAlert, categories]);
 
+  // categories 로드 완료 후 문서 조회 시작
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
-  useEffect(() => { fetchDocuments(selectedCategory); }, [selectedCategory, fetchDocuments]);
+  useEffect(() => {
+    if (selectedCategory !== ALL_CATEGORY || categories.length > 0) {
+      fetchDocuments(selectedCategory);
+    }
+  }, [selectedCategory, fetchDocuments, categories]);
 
   const totalCount = categories.reduce((sum, c) => sum + c.document_count, 0);
 
@@ -296,44 +436,13 @@ export default function AdminRegulations() {
 
         <div className="min-w-0 p-8">
 
-          {/* ── 카테고리 선택 ── */}
-          <div className="mb-8 flex flex-wrap gap-3">
-            <button
-              onClick={() => setSelectedCategory(ALL_CATEGORY)}
-              className={`${CATEGORY_BTN_BASE} ${selectedCategory === ALL_CATEGORY
-                ? "bg-nav-accent text-white"
-                : "bg-white text-nav-inactive hover:bg-[#f0f9ff] hover:text-nav-accent"
-                }`}
-            >
-              <LayoutGrid size={15} />
-              전체
-              <span className={`rounded-full px-2 py-0.5 text-[11px] ${selectedCategory === ALL_CATEGORY ? "bg-white/20" : "bg-nav-active-bg-from"
-                }`}>
-                {totalCount}
-              </span>
-            </button>
-
-            {categories.map(item => {
-              const Icon = getCategoryIcon(item.category);
-              const isSelected = selectedCategory === item.category;
-              return (
-                <button
-                  key={item.category}
-                  onClick={() => setSelectedCategory(item.category)}
-                  className={`${CATEGORY_BTN_BASE} ${isSelected
-                    ? "bg-nav-accent text-white"
-                    : "bg-white text-nav-inactive hover:bg-[#f0f9ff] hover:text-nav-accent"
-                    }`}
-                >
-                  <Icon size={15} />
-                  {item.category}
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] ${isSelected ? "bg-white/20" : "bg-nav-active-bg-from"
-                    }`}>
-                    {item.document_count}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="mb-8">
+            <CategorySelectBox
+              categories={categories}
+              selected={selectedCategory}
+              totalCount={totalCount}
+              onChange={setSelectedCategory}
+            />
           </div>
 
           {/* ── 문서 테이블 ── */}
