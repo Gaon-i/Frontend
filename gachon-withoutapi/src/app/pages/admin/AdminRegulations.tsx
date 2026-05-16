@@ -3,7 +3,7 @@ import {
     FileText, Loader2, ChevronRight,
     Calendar, Link as LinkIcon, Tag, Eye, EyeOff,
     AlertCircle, LayoutGrid, Info, X, Globe, Clipboard,
-    DoorOpen, Building2, ScrollText,
+    DoorOpen, Coffee, Building2, ScrollText,
     Wrench, Plug, ClipboardList, ChevronDown, Check,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -33,13 +33,6 @@ interface RegulationDocument {
     updated_at: string;
 }
 
-interface ApiResponse<T> {
-    status: number;
-    message: string;
-    data: T;
-    error_code: string | null;
-}
-
 interface DetailModalProps {
     doc: RegulationDocument;
     onClose: () => void;
@@ -55,14 +48,14 @@ interface AlertState {
 
 const ALL_CATEGORY = "__ALL__";
 
-const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
-    "admission": DoorOpen,
-    "facility": Plug,
-    "facility_usage": ClipboardList,
-    "intro": Building2,
-    "rules": ScrollText,
-    "tip": Wrench,
-    "tip_restroom": Wrench,
+const CATEGORY_MAP: Record<string, { icon: LucideIcon; label: string }> = {
+    "admission": { icon: DoorOpen, label: "입·퇴사 안내" },
+    "facility": { icon: Plug, label: "편의시설" },
+    "facility_usage": { icon: ClipboardList, label: "시설 이용 안내" },
+    "intro": { icon: Building2, label: "생활관 소개" },
+    "rules": { icon: ScrollText, label: "생활관 수칙" },
+    "tip": { icon: Coffee, label: "생활 정보" },
+    "tip_restroom": { icon: Wrench, label: "화장실 안내" },
 };
 
 const DUMMY_CATEGORIES: CategoryItem[] = [
@@ -177,11 +170,11 @@ const DUMMY_DOCUMENTS: RegulationDocument[] = [
 // ─── 유틸 ─────────────────────────────────────────────────
 
 function getCategoryIcon(category: string): LucideIcon {
-    if (CATEGORY_ICON_MAP[category]) return CATEGORY_ICON_MAP[category];
-    for (const [key, Icon] of Object.entries(CATEGORY_ICON_MAP)) {
-        if (category.includes(key) || key.includes(category)) return Icon;
-    }
-    return LayoutGrid;
+    return CATEGORY_MAP[category]?.icon ?? LayoutGrid;
+}
+
+function getCategoryLabel(category: string): string {
+    return CATEGORY_MAP[category]?.label ?? category;
 }
 
 // ─── 커스텀 훅 ─────────────────────────────────────────────
@@ -230,7 +223,7 @@ function CategorySelectBox({
     const allOptions = [allOption, ...categories];
 
     const selectedItem = allOptions.find(o => o.category === selected);
-    const selectedLabel = selected === ALL_CATEGORY ? "전체" : selected;
+    const selectedLabel = selected === ALL_CATEGORY ? "전체" : getCategoryLabel(selected);
     const SelectedIcon = selected === ALL_CATEGORY ? LayoutGrid : getCategoryIcon(selected);
 
     return (
@@ -256,9 +249,7 @@ function CategorySelectBox({
                     <span className={`text-[14px] font-bold ${isOpen ? "text-nav-accent" : "text-nav-primary"}`}>
                         {selectedLabel}
                     </span>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${isOpen
-                        ? "bg-nav-accent/10 text-nav-accent"
-                        : "bg-[#f0f9ff] text-nav-inactive"
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${isOpen ? "bg-nav-accent/10 text-nav-accent" : "bg-[#f0f9ff] text-nav-inactive"
                         }`}>
                         {selectedItem?.document_count ?? totalCount}
                     </span>
@@ -279,28 +270,22 @@ function CategorySelectBox({
                         {allOptions.map(item => {
                             const isAll = item.category === ALL_CATEGORY;
                             const Icon = isAll ? LayoutGrid : getCategoryIcon(item.category);
-                            const label = isAll ? "전체" : item.category;
+                            const label = isAll ? "전체" : getCategoryLabel(item.category);
                             const isSelected = selected === item.category;
-                            const isChild = !isAll && item.category.includes("_");
 
                             return (
                                 <li key={item.category} role="option" aria-selected={isSelected}>
                                     <button
                                         type="button"
                                         onClick={() => { onChange(item.category); setIsOpen(false); }}
-                                        className={`flex w-full items-center justify-between border-b border-[#f8fafc] text-left text-[14px] font-medium transition-colors last:border-none
-                      ${isChild ? "pl-9 pr-5 py-3" : "px-5 py-3.5"}
-                      ${isSelected
-                                                ? "bg-nav-active-bg-from text-nav-accent"
-                                                : "text-nav-primary hover:bg-[#f0f9ff] hover:text-nav-accent"
+                                        className={`flex w-full items-center justify-between border-b border-[#f8fafc] px-5 py-3.5 text-left text-[14px] font-medium transition-colors last:border-none ${isSelected
+                                            ? "bg-nav-active-bg-from text-nav-accent"
+                                            : "text-nav-primary hover:bg-[#f0f9ff] hover:text-nav-accent"
                                             }`}
                                     >
                                         <div className="flex items-center gap-2">
-                                            {isChild && <span className="text-nav-inactive">↳</span>}
-                                            <Icon size={14} className={isChild ? "opacity-60" : ""} />
-                                            <span className={`font-bold ${isChild ? "text-[13px]" : ""}`}>
-                                                {label}
-                                            </span>
+                                            <Icon size={14} />
+                                            <span className="font-bold">{label}</span>
                                             <span className={`rounded-full px-2 py-0.5 text-[11px] ${isSelected
                                                 ? "bg-nav-accent/10 text-nav-accent"
                                                 : "bg-[#f0f9ff] text-nav-inactive"
@@ -320,8 +305,6 @@ function CategorySelectBox({
     );
 }
 
-// ─── 서브 컴포넌트 ─────────────────────────────────────────
-
 function RegulationDetailModal({ doc, onClose }: DetailModalProps) {
     return (
         <div
@@ -333,7 +316,6 @@ function RegulationDetailModal({ doc, onClose }: DetailModalProps) {
                 className="animate-in fade-in zoom-in duration-300 relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[32px] bg-white shadow-2xl"
                 onClick={e => e.stopPropagation()}
             >
-                {/* ── 헤더 ── */}
                 <div className="flex shrink-0 items-center justify-between border-b border-nav-inactive/20 bg-white px-8 py-6">
                     <div>
                         <h2 className="text-[22px] font-bold text-nav-primary">규정 상세 정보</h2>
@@ -350,7 +332,6 @@ function RegulationDetailModal({ doc, onClose }: DetailModalProps) {
                     </button>
                 </div>
 
-                {/* ── 바디 ── */}
                 <div className="flex-1 space-y-8 overflow-y-auto p-8">
                     <section>
                         <h3 className="mb-3 flex items-center gap-2 text-[14px] font-bold text-nav-primary">
@@ -366,7 +347,7 @@ function RegulationDetailModal({ doc, onClose }: DetailModalProps) {
                             <h3 className="mb-3 text-[14px] font-bold text-nav-primary">적용 대상 / 위치</h3>
                             <div className="flex flex-wrap gap-2">
                                 <span className="rounded-lg bg-nav-accent/10 px-3 py-1.5 text-[13px] font-bold text-nav-accent">
-                                    {doc.category.toUpperCase()}
+                                    {getCategoryLabel(doc.category)}
                                 </span>
                                 <span className="rounded-lg bg-gray-100 px-3 py-1.5 text-[13px] font-bold text-gray-500">
                                     {doc.dormitory || "전체 생활관"}
@@ -413,7 +394,6 @@ function RegulationDetailModal({ doc, onClose }: DetailModalProps) {
                                 </a>
                             </section>
                         )}
-
                         <section>
                             <h3 className="mb-3 flex items-center gap-2 text-[14px] font-bold text-nav-primary">
                                 <Tag size={16} className="text-nav-accent" /> 검색 키워드
@@ -436,7 +416,6 @@ function RegulationDetailModal({ doc, onClose }: DetailModalProps) {
                     </div>
                 </div>
 
-                {/* ── 푸터 ── */}
                 <div className="shrink-0 border-t border-nav-inactive/20 bg-[#f0f9ff] p-6">
                     <button
                         onClick={onClose}
@@ -446,7 +425,7 @@ function RegulationDetailModal({ doc, onClose }: DetailModalProps) {
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
 
@@ -483,7 +462,6 @@ export default function AdminRegulations() {
         <AdminLayout>
             <div className="min-h-screen w-full overflow-x-hidden bg-[#f0f9ff]">
 
-                {/* ── 페이지 헤더 ── */}
                 <div className="border-b border-nav-inactive/20 bg-white px-8 py-6">
                     <h1 className="text-[32px] font-bold text-nav-primary">규정 문서 관리</h1>
                     <p className="mt-1 text-[14px] text-nav-inactive">
@@ -493,7 +471,6 @@ export default function AdminRegulations() {
 
                 <div className="min-w-0 p-8">
 
-                    {/* ── 카테고리 선택 ── */}
                     <div className="mb-8">
                         <CategorySelectBox
                             categories={categories}
@@ -503,18 +480,17 @@ export default function AdminRegulations() {
                         />
                     </div>
 
-                    {/* ── 문서 테이블 ── */}
                     <div className="overflow-hidden rounded-[24px] border border-[#f1f5f9] bg-white shadow-sm">
                         <div className="overflow-x-auto">
                             <table className="w-full table-fixed">
                                 <thead className="bg-[#f0f9ff]">
                                     <tr>
-                                        <th className="w-[60%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive">문서 제목</th>
-                                        <th className="hidden w-[12%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive xl:table-cell">버전</th>
-                                        <th className="hidden w-[18%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive lg:table-cell">생활관</th>
-                                        <th className="hidden w-[18%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive lg:table-cell">상태</th>
-                                        <th className="hidden w-[15%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive xl:table-cell">수정일</th>
-                                        <th className="w-[20%] px-4 py-4 text-right text-[13px] font-semibold text-nav-inactive">상세</th>
+                                        <th className="w-[50%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive">문서 제목</th>
+                                        <th className="hidden w-[10%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive xl:table-cell">버전</th>
+                                        <th className="hidden w-[15%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive lg:table-cell">생활관</th>
+                                        <th className="hidden w-[12%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive lg:table-cell">상태</th>
+                                        <th className="hidden w-[13%] px-4 py-4 text-left text-[13px] font-semibold text-nav-inactive xl:table-cell">수정일</th>
+                                        <th className="w-[10%] px-4 py-4 text-right text-[13px] font-semibold text-nav-inactive">상세</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-nav-inactive/20">
@@ -531,7 +507,7 @@ export default function AdminRegulations() {
                                                 onClick={() => setSelectedDoc(doc)}
                                                 className="group cursor-pointer transition-colors hover:bg-[#f0f9ff]"
                                             >
-                                                <td className="px-4 py-4">
+                                                <td className="w-[50%] px-4 py-4">
                                                     <div className="flex items-start gap-2 min-w-0">
                                                         <div className="mt-0.5 shrink-0 rounded-lg bg-nav-active-bg-from p-1.5 text-nav-accent transition-colors group-hover:bg-nav-accent group-hover:text-white">
                                                             <FileText size={16} />
@@ -542,28 +518,29 @@ export default function AdminRegulations() {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="hidden px-4 py-4 xl:table-cell">
+                                                <td className="hidden w-[10%] px-4 py-4 xl:table-cell">
                                                     <div className="flex flex-col">
                                                         <span className="whitespace-nowrap text-[12px] font-medium text-nav-primary">{doc.document_version}</span>
                                                         <span className="whitespace-nowrap text-[11px] text-nav-inactive">{doc.source_type}</span>
                                                     </div>
                                                 </td>
-                                                <td className="hidden whitespace-nowrap px-4 py-4 text-[12px] text-nav-primary lg:table-cell">
+                                                <td className="hidden w-[15%] whitespace-nowrap px-4 py-4 text-[12px] text-nav-primary lg:table-cell">
                                                     {doc.dormitory || "전체"}
                                                 </td>
-                                                <td className="hidden px-4 py-4 lg:table-cell">
-                                                    <span className={`flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${doc.is_active ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"}`}>
+                                                <td className="hidden w-[12%] px-4 py-4 lg:table-cell">
+                                                    <span className={`flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${doc.is_active ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"
+                                                        }`}>
                                                         {doc.is_active ? <Eye size={11} /> : <EyeOff size={11} />}
                                                         {doc.is_active ? "활성" : "비활성"}
                                                     </span>
                                                 </td>
-                                                <td className="hidden whitespace-nowrap px-4 py-4 text-[12px] text-nav-inactive xl:table-cell">
+                                                <td className="hidden w-[13%] whitespace-nowrap px-4 py-4 text-[12px] text-nav-inactive xl:table-cell">
                                                     <div className="flex items-center gap-1.5">
                                                         <Calendar size={13} />
                                                         {new Date(doc.updated_at).toLocaleDateString()}
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-4 text-right">
+                                                <td className="w-[10%] px-4 py-4 text-right">
                                                     <button className="rounded-lg p-1.5 text-nav-inactive transition-all group-hover:bg-nav-active-bg-from group-hover:text-nav-accent">
                                                         <ChevronRight size={18} />
                                                     </button>
@@ -582,7 +559,6 @@ export default function AdminRegulations() {
                         </div>
                     </div>
 
-                    {/* ── 안내 카드 ── */}
                     <div className="mt-6 flex items-center gap-3 rounded-[16px] border border-nav-accent/20 bg-nav-active-bg-from p-4">
                         <Info className="text-nav-accent" size={20} />
                         <p className="text-[13px] font-medium text-nav-accent">
@@ -592,7 +568,6 @@ export default function AdminRegulations() {
                 </div>
             </div>
 
-            {/* ── 상세 모달 ── */}
             {selectedDoc && (
                 <RegulationDetailModal
                     doc={selectedDoc}
@@ -600,7 +575,6 @@ export default function AdminRegulations() {
                 />
             )}
 
-            {/* ── 알림 모달 (다른 파일과 동일한 중앙 모달로 통일) ── */}
             {alert.show && (
                 <div
                     role="dialog"
