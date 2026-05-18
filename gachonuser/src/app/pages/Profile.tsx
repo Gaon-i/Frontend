@@ -315,7 +315,7 @@ export default function Profile() {
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-6">
-                <InfoRow icon={Building2} label="생활관" value={DORM_OPTIONS.find(d => d.id === String(userInfo.dormitoryName))?.name ?? `제${userInfo.dormitoryName}생활관`} />
+                <InfoRow icon={Building2} label="생활관" value={userInfo.dormitoryName} />
                 <InfoRow icon={Home} label="호수" value={`${userInfo.roomNo}호`} />
                 <InfoRow icon={Mail} label="이메일" value={userInfo.email} />
                 <InfoRow icon={Phone} label="전화번호" value={userInfo.phone} />
