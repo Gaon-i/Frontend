@@ -62,10 +62,10 @@ interface FeedbackSectionProps {
 // ─── 상수 ─────────────────────────────────────────────────
 
 const SUGGESTED_QUESTIONS: readonly string[] = [
-  "입실 시간이 언제인가요?",
-  "세탁실 이용 방법을 알려주세요",
-  "식당 운영 시간이 궁금해요",
-  "외박 신청은 어떻게 하나요?",
+  "통금은 언제인가요?",
+  "휴게실에는 어떤 시설이 있나요?",
+  "기숫가 카드를 잃어버렸어요.",
+  "외부인이 방문하려면 어떻게 해야하나요?",
 ];
 
 const REASON_OPTIONS: readonly { code: ReasonCode; label: string }[] = [

@@ -14,8 +14,8 @@ import api from "../api/axios";
 interface UserInfo {
   name: string;
   studentNo: string;
-  dormitoryId: string;
-  roomId: string | number;
+  dormitoryName: string;
+  roomNo: string | number;
   email: string;
   phone: string;
 }
@@ -58,10 +58,10 @@ function parseApiError(error: any, fallback: string): string {
 function validateEditForm(editedInfo: UserInfo, passwords: PasswordForm): FormErrors {
   const errors: FormErrors = {};
 
-  const roomStr = String(editedInfo.roomId).trim();
-  if (!roomStr) errors.roomId = "호수를 입력하세요.";
-  else if (!NUM_REGEX.test(roomStr)) errors.roomId = "숫자만 입력하세요.";
-  else if (roomStr.length < 3) errors.roomId = "3자리 이상 입력하세요.";
+  const roomStr = String(editedInfo.roomNo).trim();
+  if (!roomStr) errors.roomNo = "호수를 입력하세요.";
+  else if (!NUM_REGEX.test(roomStr)) errors.roomNo = "숫자만 입력하세요.";
+  else if (roomStr.length < 3) errors.roomNo = "3자리 이상 입력하세요.";
 
   const purePhone = editedInfo.phone.replace(/-/g, "");
   if (!purePhone) errors.phone = "전화번호를 입력하세요.";
@@ -151,8 +151,8 @@ export default function Profile() {
     try {
       const updateRes = await api.patch("/users/me", {
         phone: editedInfo.phone.replace(/-/g, ""),
-        dormitoryId: String(editedInfo.dormitoryId),
-        roomId: Number(editedInfo.roomId),
+        dormitoryName: String(editedInfo.dormitoryName),
+        roomNo: Number(editedInfo.roomNo),
       });
 
       if (updateRes.data.code !== 200) {
@@ -235,7 +235,7 @@ export default function Profile() {
     JSON.stringify(userInfo) === JSON.stringify(editedInfo) && !passwords.new;
 
   const isSaveDisabled =
-    !!(errors.roomId || errors.phone || errors.newPw || errors.confirmPw) ||
+    !!(errors.roomNo || errors.phone || errors.newPw || errors.confirmPw) ||
     (!!passwords.new && !passwords.current) || isNotChanged;
 
   return (
@@ -315,8 +315,8 @@ export default function Profile() {
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-6">
-                <InfoRow icon={Building2} label="생활관" value={DORM_OPTIONS.find(d => d.id === String(userInfo.dormitoryId))?.name ?? `제${userInfo.dormitoryId}생활관`} />
-                <InfoRow icon={Home} label="호수" value={`${userInfo.roomId}호`} />
+                <InfoRow icon={Building2} label="생활관" value={DORM_OPTIONS.find(d => d.id === String(userInfo.dormitoryName))?.name ?? `제${userInfo.dormitoryName}생활관`} />
+                <InfoRow icon={Home} label="호수" value={`${userInfo.roomNo}호`} />
                 <InfoRow icon={Mail} label="이메일" value={userInfo.email} />
                 <InfoRow icon={Phone} label="전화번호" value={userInfo.phone} />
               </div>
@@ -358,7 +358,7 @@ export default function Profile() {
                   <div className="flex items-center gap-3">
                     <Building2 size={18} className={openSelect ? "text-nav-accent" : "text-nav-inactive"} />
                     <span className="text-[14px] font-bold text-nav-primary">
-                      {DORM_OPTIONS.find(o => o.id === String(editedInfo?.dormitoryId))?.name ?? "선택"}
+                      {DORM_OPTIONS.find(o => o.id === String(editedInfo?.dormitoryName))?.name ?? "선택"}
                     </span>
                   </div>
                   <ChevronDown className={`size-4 text-nav-inactive transition-transform ${openSelect ? "rotate-180" : ""}`} />
@@ -371,13 +371,13 @@ export default function Profile() {
                         key={opt.id}
                         type="button"
                         onClick={() => {
-                          setEditedInfo(prev => prev ? { ...prev, dormitoryId: opt.id } : prev);
+                          setEditedInfo(prev => prev ? { ...prev, dormitoryName: opt.id } : prev);
                           setOpenSelect(false);
                         }}
                         className="flex w-full items-center justify-between border-b border-slate-50 px-5 py-4 text-left text-[14px] font-bold text-nav-inactive transition-colors last:border-none hover:bg-nav-active-bg-from hover:text-nav-accent"
                       >
                         {opt.name}
-                        {String(editedInfo.dormitoryId) === opt.id && <Check size={16} className="text-nav-accent" />}
+                        {String(editedInfo.dormitoryName) === opt.id && <Check size={16} className="text-nav-accent" />}
                       </button>
                     ))}
                   </div>
@@ -385,7 +385,7 @@ export default function Profile() {
                 <div className="h-5" />
               </div>
 
-              <EditInput label="호수" field="roomId" value={String(editedInfo?.roomId ?? "")} error={errors.roomId} icon={Home} onChange={v => handleEditChange("roomId", v)} />
+              <EditInput label="호수" field="roomNo" value={String(editedInfo?.roomNo ?? "")} error={errors.roomNo} icon={Home} onChange={v => handleEditChange("roomNo", v)} />
               <EditInput label="전화번호" field="phone" value={editedInfo?.phone ?? ""} error={errors.phone} icon={Phone} onChange={v => handleEditChange("phone", v)} />
 
               {/* 비밀번호 변경 */}
